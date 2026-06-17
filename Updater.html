@@ -1,0 +1,2121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isocodelabs Ops Hub → Complete Product</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #e5e5e5;
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: #a3a3a3;
+            font-size: 1rem;
+            margin-bottom: 32px;
+        }
+        .progress-bar {
+            background: #1a1a1a;
+            border-radius: 8px;
+            height: 8px;
+            margin-bottom: 40px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            border-radius: 8px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            color: #737373;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+        .step {
+            background: #141414;
+            border: 1px solid #262626;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .step:hover { border-color: #404040; }
+        .step-header {
+            padding: 20px 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            user-select: none;
+        }
+        .step-number {
+            background: #1f1f1f;
+            border: 1px solid #333;
+            color: #a3a3a3;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .step-number.special { background: #1e3a5f; border-color: #2563eb; color: #60a5fa; }
+        .step-title { font-weight: 600; font-size: 1rem; flex: 1; }
+        .step-badge {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-foundation { background: #1e3a5f; color: #60a5fa; }
+        .badge-feature { background: #1a3d2e; color: #4ade80; }
+        .badge-integration { background: #3d1a3d; color: #e879f9; }
+        .badge-ui { background: #3d3d1a; color: #facc15; }
+        .badge-required { background: #3d1a1a; color: #f87171; }
+        .badge-checkpoint { background: #2d2d1a; color: #fbbf24; }
+        .step-toggle {
+            color: #525252;
+            font-size: 1.2rem;
+            transition: transform 0.2s;
+        }
+        .step.open .step-toggle { transform: rotate(180deg); }
+        .step-content {
+            display: none;
+            padding: 0 24px 24px;
+            border-top: 1px solid #1f1f1f;
+        }
+        .step.open .step-content { display: block; }
+        .step-desc {
+            color: #a3a3a3;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+            padding-top: 16px;
+        }
+        .prompt-block {
+            background: #0d0d0d;
+            border: 1px solid #262626;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .prompt-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .prompt-label span {
+            font-size: 0.8rem;
+            color: #737373;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .copy-btn {
+            background: #1f1f1f;
+            border: 1px solid #333;
+            color: #a3a3a3;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover { background: #2a2a2a; color: #fff; }
+        .prompt-code {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.8rem;
+            line-height: 1.7;
+            color: #d4d4d4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .tests-block {
+            background: #0f1a0f;
+            border: 1px solid #1a3d1a;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        .tests-label {
+            font-size: 0.8rem;
+            color: #4ade80;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .test-item {
+            color: #a3a3a3;
+            font-size: 0.85rem;
+            padding: 4px 0;
+            padding-left: 16px;
+            position: relative;
+        }
+        .test-item::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #4ade80;
+        }
+        .warning {
+            background: #1a1a0f;
+            border: 1px solid #3d3d1a;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: #fbbf24;
+        }
+        .separator {
+            text-align: center;
+            color: #404040;
+            font-size: 0.85rem;
+            padding: 24px 0;
+            border-top: 1px dashed #262626;
+            margin-top: 8px;
+        }
+        .api-guide {
+            background: #0f0f1a;
+            border: 1px solid #1a1a3d;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 32px;
+        }
+        .api-guide h2 {
+            font-size: 1.2rem;
+            color: #a78bfa;
+            margin-bottom: 16px;
+        }
+        .api-guide h3 {
+            font-size: 1rem;
+            color: #c4b5fd;
+            margin: 16px 0 8px;
+        }
+        .api-guide p, .api-guide li {
+            color: #a3a3a3;
+            font-size: 0.85rem;
+            line-height: 1.7;
+        }
+        .api-guide ul { padding-left: 20px; margin-bottom: 12px; }
+        .api-guide code {
+            background: #1f1f1f;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #e5e5e5;
+        }
+        .step-issues {
+            background: #1a0f0f;
+            border: 1px solid #3d1a1a;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        .step-issues-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .step-issues-header span {
+            font-size: 0.8rem;
+            color: #f87171;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .issue-list { list-style: none; padding: 0; }
+        .issue-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid #1f1f1f;
+        }
+        .issue-item:last-child { border-bottom: none; }
+        .issue-item input[type="checkbox"] {
+            margin-top: 3px;
+            accent-color: #4ade80;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .issue-item label {
+            color: #a3a3a3;
+            font-size: 0.85rem;
+            flex: 1;
+            cursor: pointer;
+        }
+        .issue-item.resolved label {
+            text-decoration: line-through;
+            color: #525252;
+        }
+        .add-issue-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .add-issue-input {
+            flex: 1;
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            color: #e5e5e5;
+            outline: none;
+        }
+        .add-issue-input:focus { border-color: #60a5fa; }
+        .add-issue-input::placeholder { color: #525252; }
+        .add-issue-btn {
+            background: #1f1f1f;
+            border: 1px solid #333;
+            color: #a3a3a3;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .add-issue-btn:hover { background: #2a2a2a; color: #fff; }
+        .issue-count-badge {
+            background: #3d1a1a;
+            color: #f87171;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+        .issue-count-badge.all-resolved {
+            background: #1a3d1a;
+            color: #4ade80;
+        }
+        .completed-check {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #166534;
+            border: 2px solid #4ade80;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #4ade80;
+            cursor: pointer;
+        }
+        .step.completed .step-number { background: #166534; border-color: #4ade80; color: #4ade80; }
+        .step.completed .step-title { color: #737373; text-decoration: line-through; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Isocodelabs Ops Hub → Complete Product</h1>
+        <p class="subtitle">Step-by-step build plan with Antigravity prompts. Click each step to expand.</p>
+
+        <p class="progress-text"><span id="completedCount">0</span> of 18 steps completed</p>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- COMMON CONTEXT -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number special">★</div>
+                <div class="step-title">Common Context — Paste this BEFORE every step prompt</div>
+                <span class="step-badge badge-required">REQUIRED</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">This context block gives Antigravity the full picture of your project. Paste it at the START of every prompt so it understands the codebase, architecture, and rules before making changes.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Common Context — Paste Before Every Step</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">PROJECT CONTEXT — Isocodelabs Ops Hub (Internal Operations Management)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PROJECT: Isocodelabs Ops Hub — an internal operations management web app for a 2-person team running multiple digital products under the Isocodelabs brand.
+
+TECH STACK:
+- Framework: Next.js 14 (App Router) with React 18
+- Database: PostgreSQL via Prisma ORM
+- Auth: JWT (jsonwebtoken) + bcryptjs password hashing
+- State: React Context + Zustand for global state
+- Styling: TailwindCSS with custom design system (Apple.com-inspired)
+- Animations: Framer Motion
+- Real-time: Socket.io (WebSocket)
+- AI: Google Vertex AI SDK (Gemini Pro) via GCP
+- Rich Text: Tiptap editor
+- Charts: Recharts / Tremor
+- Package manager: npm
+- Module system: ES Modules (import/export)
+
+PROJECT STRUCTURE:
+```
+isocodelabs-ops-hub/
+├── src/
+│   ├── app/                    ← Next.js App Router pages
+│   │   ├── (auth)/             ← Login/auth pages
+│   │   ├── (dashboard)/        ← All dashboard pages (protected)
+│   │   │   ├── meetings/
+│   │   │   ├── tasks/
+│   │   │   ├── clients/
+│   │   │   ├── projects/
+│   │   │   ├── content/
+│   │   │   ├── ideas/
+│   │   │   ├── workspace/
+│   │   │   ├── dashboard/
+│   │   │   ├── test-site/
+│   │   │   ├── industries/
+│   │   │   ├── legal/
+│   │   │   ├── employees/
+│   │   │   ├── business-model/
+│   │   │   ├── money/
+│   │   │   ├── explore/
+│   │   │   └── settings/
+│   │   └── api/                ← API routes
+│   ├── components/             ← Shared UI components
+│   │   ├── ui/                 ← Base UI primitives (Button, Card, Input, etc.)
+│   │   ├── layout/             ← Sidebar, TopBar, DashboardLayout
+│   │   └── modules/            ← Module-specific components
+│   ├── lib/                    ← Business logic
+│   │   ├── db/                 ← Prisma client + helpers
+│   │   ├── auth/               ← JWT, middleware, session
+│   │   ├── ai/                 ← Vertex AI integration
+│   │   ├── integrations/       ← Google Meet, Gmail, WhatsApp, Fathom, Nanobana, Veo
+│   │   └── realtime/           ← Socket.io server setup
+│   ├── contexts/               ← React contexts (Auth, Theme, Toast, Realtime)
+│   ├── hooks/                  ← Custom React hooks
+│   └── styles/                 ← Global CSS, design tokens
+├── prisma/
+│   ├── schema.prisma           ← Database schema
+│   └── migrations/             ← Prisma migrations
+├── public/                     ← Static assets
+├── .env.example                ← Environment variables template
+└── package.json
+```
+
+DATABASE TABLES:
+users, meetings, tasks, sub_tasks, clients, interactions, communication_logs, client_insights, projects, milestones, content_items, content_ideas, content_idea_validations, content_outlines, ideas, ai_validations, workspace_pages, workspace_folders, blocks, dashboard_accounts, test_results, industries, industry_products, legal_documents, employees, employee_payments, business_models, transactions, invoices, explore_resources, explore_bookmarks, settings, notifications, mcp_api_keys
+
+USER SETUP:
+- 2 users only (both founders, admin-level access)
+- No role-based restrictions needed (both see everything)
+
+KEY INTEGRATIONS:
+- Google Meet/Calendar API (OAuth 2.0) — auto-generate meet links
+- Fathom AI — paste shared link for meeting recordings/summaries
+- Gmail API (OAuth 2.0) — track client email communications
+- WhatsApp Business API — track client messages
+- Google Vertex AI (Gemini Pro) — idea validation, content AI, communication insights
+- Nanobana API — image generation (Test Site)
+- Veo API — video generation (Test Site)
+- Social Media APIs — dashboard metrics
+- Analytics APIs — website traffic
+
+DESIGN LANGUAGE:
+- Apple.com inspired: clean, minimal, elegant, premium
+- TailwindCSS with custom design tokens
+- Framer Motion animations on all interactions
+- Dark/light mode support
+- 8px spacing grid, generous whitespace
+- SF Pro / Inter typography
+
+CRITICAL RULES:
+1. NEVER hardcode secrets — all API keys in .env via GCP Secret Manager
+2. ALWAYS use authenticated fetch wrapper for API calls
+3. ALL pages must have loading skeletons (no blank states)
+4. ALL pages must have error boundaries (no white screens)
+5. Real-time updates via WebSocket for all data mutations
+6. Responsive but desktop-optimized
+7. Every external API call must have timeout + graceful fallback
+8. Communication logs deduplicated by messageId
+9. AI calls are async — show processing state, never block UI
+10. OAuth tokens stored encrypted, with automatic refresh
+
+ENVIRONMENT VARIABLES:
+- DATABASE_URL (PostgreSQL connection string)
+- JWT_SECRET (required, no fallback)
+- GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET (OAuth for Meet/Gmail)
+- GOOGLE_REDIRECT_URI
+- GCP_PROJECT_ID, GCP_LOCATION (Vertex AI)
+- WHATSAPP_API_TOKEN, WHATSAPP_PHONE_NUMBER_ID
+- NANOBANA_API_KEY
+- VEO_API_KEY (or uses GCP credentials)
+- REDIS_URL (caching/pub-sub)
+- NEXT_PUBLIC_SOCKET_URL (WebSocket endpoint)
+
+CURRENT STEP: [see prompt below]
+
+ALREADY COMPLETED (DO NOT BREAK OR REWRITE THESE):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Will be updated as steps complete — paste current progress here]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+                </div>
+                <div class="warning">⚠️ Paste this context FIRST, then paste the step-specific prompt below it. This ensures Antigravity knows the full architecture before making changes.</div>
+            </div>
+        </div>
+
+        <div class="separator">— Sequential Build Steps Below —</div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 1: Project Setup & Foundation -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step" data-step="1">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">1</div>
+                <div class="step-title">Project Setup, Database Schema & Auth</div>
+                <span class="step-badge badge-foundation">Foundation</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Initialize the Next.js project, set up the database schema with Prisma, implement JWT auth, and create the base layout with premium design system.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">Set up the Isocodelabs Ops Hub project from scratch:
+
+1. NEXT.JS SETUP:
+   - Initialize Next.js 14 with App Router, TypeScript, TailwindCSS
+   - Install dependencies: prisma, @prisma/client, jsonwebtoken, bcryptjs, framer-motion, socket.io, socket.io-client, @google-cloud/aiplatform, tiptap packages, recharts, zustand, date-fns, uuid
+   - Create the folder structure as defined in PROJECT CONTEXT
+   - Set up path aliases in tsconfig.json (@/ for src/)
+
+2. DATABASE SCHEMA (Prisma):
+   Create prisma/schema.prisma with ALL tables:
+   - users (id, email, name, password_hash, avatar_url, created_at, updated_at)
+   - meetings (id, title, description, agenda, notes, scheduled_at, duration, status[SCHEDULED/IN_PROGRESS/COMPLETED/CANCELLED], google_meet_link, google_calendar_event_id, meeting_started_at, meeting_ended_at, fathom_link, fathom_summary, fathom_transcript, fathom_imported_at, created_by, created_at, updated_at)
+   - meeting_attendees (meeting_id, user_id)
+   - tasks (id, title, description, status[TODO/IN_PROGRESS/IN_REVIEW/DONE], priority[LOW/MEDIUM/HIGH/URGENT], assignee_id, due_date, meeting_id, project_id, tags[], created_by, created_at, updated_at)
+   - clients (id, name, email, phone, company, pipeline_stage[LEAD/CONTACTED/PROPOSAL/NEGOTIATION/ACTIVE/CHURNED], notes, source, value, connected_gmail, connected_whatsapp, last_communication_at, total_emails, total_whatsapp_messages, created_by, created_at, updated_at)
+   - interactions (id, client_id, type[EMAIL/CALL/MEETING/NOTE/OTHER], summary, details, date, created_by, created_at)
+   - communication_logs (id, client_id, source[GMAIL/WHATSAPP/MANUAL], direction[INBOUND/OUTBOUND], subject, body, sender_email, sender_phone, received_at, thread_id, message_id, attachments[], sentiment[POSITIVE/NEUTRAL/NEGATIVE], flagged_as_change_request, action_items[], created_at)
+   - client_insights (id, client_id, type[DAILY_DIGEST/WEEKLY_DIGEST/COMMUNICATION_SUMMARY/CHANGE_REQUEST_FLAG/ACTION_ITEMS], timeframe_start, timeframe_end, summary, key_topics[], sentiment_overview, email_count, whatsapp_count, manual_log_count, action_items[], change_requests[], generated_by, created_at)
+   - projects (id, name, description, client_id, status[PLANNING/ACTIVE/ON_HOLD/COMPLETED/CANCELLED], start_date, end_date, budget, created_by, created_at, updated_at)
+   - milestones (id, project_id, title, description, due_date, status[PENDING/IN_PROGRESS/COMPLETED], created_at, updated_at)
+   - content_items (id, title, body, type[BLOG_POST/SOCIAL_MEDIA/VIDEO/NEWSLETTER/OTHER], status[IDEA/DRAFT/IN_REVIEW/SCHEDULED/PUBLISHED], product_id, publish_date, platforms[], tags[], created_by, created_at, updated_at)
+   - content_ideas (id, title, description, content_type, target_audience, status[RAW/VALIDATING/VALIDATED/OUTLINED/IN_DEVELOPMENT/REJECTED], tags[], created_by, created_at, updated_at)
+   - content_idea_validations (id, idea_id, feasibility_score, audience_fit_score, originality_score, overall_score, strengths[], weaknesses[], recommendations[], generated_by, created_at)
+   - content_outlines (id, idea_id, sections JSON, estimated_word_count, estimated_read_time, generated_by, created_at)
+   - ideas (id, title, description, category[PRODUCT/FEATURE/CONTENT/BUSINESS/OTHER], status[RAW/VALIDATED/APPROVED/REJECTED/IMPLEMENTED], impact, effort, tags[], created_by, created_at, updated_at)
+   - ai_validations (id, idea_id, type, prompt, response, confidence, claims JSON, created_at)
+   - workspace_pages (id, title, content JSON, folder_id, icon, cover_image, last_edited_by, created_by, created_at, updated_at)
+   - workspace_folders (id, name, parent_id, icon, created_at, updated_at)
+   - test_results (id, provider[NANOBANA/VEO], prompt, parameters JSON, status[PENDING/PROCESSING/COMPLETED/FAILED], output_type[IMAGE/VIDEO], output_url, output_metadata JSON, error_message, processing_time, created_by, created_at, completed_at)
+   - settings (id, key, value, category, updated_at)
+   - notifications (id, user_id, title, body, type, is_read, link, created_at)
+   - Run: npx prisma migrate dev --name init
+
+3. AUTH SYSTEM:
+   - Create src/lib/auth/jwt.ts: generateToken(user), verifyToken(token)
+   - Create src/lib/auth/middleware.ts: requireAuth(request) — extracts and verifies JWT from Authorization header
+   - Create API route: POST /api/auth/login (email + password → JWT)
+   - Create API route: POST /api/auth/register (create user, hash password)
+   - Create src/contexts/AuthContext.tsx with authFetch wrapper that auto-attaches JWT
+   - JWT_SECRET must come from env (throw if missing)
+   - Seed 2 users on first run (admin credentials configurable via env)
+
+4. DESIGN SYSTEM:
+   - Configure tailwind.config.ts with Apple-inspired tokens: colors (neutral grays, blue accent), fonts (Inter), spacing (8px grid)
+   - Create src/styles/globals.css with CSS custom properties for theming
+   - Create base components: Button, Card, Input, Badge, Avatar, Skeleton in src/components/ui/
+   - All components use Framer Motion for enter/hover animations
+   - Create DashboardLayout with collapsible sidebar (all nav items) + TopBar (search, notifications, user avatar)
+
+5. SEED DATA:
+   - Create prisma/seed.ts with realistic sample data for demo purposes
+   - 2 users, 5 sample meetings, 10 tasks, 5 clients, 3 projects, sample content items
+
+VERIFICATION TESTS (run these after implementation):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 1: Run "npm run dev" → app boots on localhost:3000 without errors
+TEST 2: Visit /login → login form renders with premium styling
+TEST 3: Login with seeded credentials → redirects to dashboard
+TEST 4: Call GET /api/tasks without token → returns 401
+TEST 5: Call GET /api/tasks with valid token → returns 200 with data
+TEST 6: Run "npx prisma studio" → all tables exist with seed data
+TEST 7: Sidebar shows all nav items (Meetings, Tasks, Clients, Projects, Content, Ideas, Workspace, Dashboard, Test Site, Settings)
+TEST 8: Click each nav item → page shell renders (no 404s)
+TEST 9: Remove JWT_SECRET from .env → app crashes with clear error message
+TEST 10: Check TailwindCSS → fonts are Inter, spacing is clean, components have subtle animations</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Open browser → login page loads with clean, premium styling (no default Next.js look)</div>
+                    <div class="test-item">Login with credentials → dashboard appears with sidebar navigation</div>
+                    <div class="test-item">Click every sidebar item → each page loads (no blank screens or 404s)</div>
+                    <div class="test-item">Open DevTools Network tab → API calls include Authorization header</div>
+                    <div class="test-item">Hover over buttons/cards → smooth animations visible</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 2: Meetings + Google Meet + Fathom -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step" data-step="2">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">2</div>
+                <div class="step-title">Meetings Module — Google Meet + Fathom AI Integration</div>
+                <span class="step-badge badge-integration">Integration</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Build the full meetings module with Google Meet link generation, Fathom AI import, meeting lifecycle (schedule → start → end → tasks), and real-time updates.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE (do NOT touch these):
+- Step 1 ✅ Project setup (Next.js 14, Prisma schema with all tables, JWT auth, design system, DashboardLayout, seed data, all pages scaffolded)
+
+DO NOT modify, rewrite, or break Step 1. Build ON TOP of it.
+
+NOW implement the Meetings Module in full:
+
+1. GOOGLE MEET INTEGRATION (src/lib/integrations/google-meet.ts):
+   - Set up Google OAuth 2.0 flow for Calendar API access
+   - Create src/app/api/auth/google/route.ts — initiates OAuth consent
+   - Create src/app/api/auth/google/callback/route.ts — exchanges code for tokens, stores encrypted in DB
+   - Create function: createMeetingWithGoogleMeet(meetingData) → creates Google Calendar event with Meet conferencing, returns meet link
+   - Scopes needed: calendar.events
+   - Store tokens per user in encrypted settings
+
+2. MEETINGS API ROUTES:
+   - POST /api/meetings — create meeting + auto-generate Google Meet link (if Google connected)
+   - GET /api/meetings — list meetings with filters (status, date range, attendees)
+   - GET /api/meetings/[id] — get single meeting with all details
+   - PUT /api/meetings/[id] — update meeting
+   - POST /api/meetings/[id]/start — mark as IN_PROGRESS, set meetingStartedAt
+   - POST /api/meetings/[id]/end — mark as COMPLETED, set meetingEndedAt
+   - PUT /api/meetings/[id]/notes — add/update meeting notes (rich text)
+   - PUT /api/meetings/[id]/fathom-link — attach Fathom URL (validate format: fathom.video/*)
+   - POST /api/meetings/[id]/fathom-import — fetch/store Fathom summary + transcript
+   - POST /api/meetings/[id]/tasks — create tasks from meeting outcomes
+   - DELETE /api/meetings/[id] — soft delete
+
+3. MEETINGS UI (src/app/(dashboard)/meetings/page.tsx):
+   - List view with meeting cards showing: title, date, status badge, attendees, Google Meet link
+   - "New Meeting" button → modal with: title, description, agenda, date/time, duration, attendees
+   - On create: auto-generates Google Meet link (shows it in the card)
+   - Meeting detail view (/meetings/[id]):
+     - Header: title, status, date, duration
+     - "Start Meeting" button → opens Google Meet in new tab + marks IN_PROGRESS
+     - "End Meeting" button → marks COMPLETED
+     - Notes editor (Tiptap rich text)
+     - Fathom section: paste link input + "Import" button + display summary/transcript
+     - Tasks section: list tasks created from this meeting + "Add Task" button
+   - Status flow visualization: SCHEDULED → IN_PROGRESS → COMPLETED
+   - Real-time: partner sees meeting updates live via WebSocket
+
+4. FATHOM INTEGRATION (src/lib/integrations/fathom.ts):
+   - Validate Fathom URL format (https://fathom.video/share/*)
+   - For import: since Fathom has no public API, provide a manual paste interface where user can paste the summary text and transcript text from Fathom's shared page
+   - Store both separately on the meeting record
+   - Display Fathom data in a clean accordion/tab UI below notes
+
+VERIFICATION TESTS (run these after implementation):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 1: Navigate to /meetings → meeting list renders with sample meetings from seed
+TEST 2: Click "New Meeting" → fill form → submit → meeting appears in list with Google Meet link
+TEST 3: Click "Start Meeting" → Google Meet link opens in new tab, status changes to IN_PROGRESS
+TEST 4: Click "End Meeting" → status changes to COMPLETED, duration is calculated
+TEST 5: In meeting detail, paste a Fathom link → link is stored, "Import" button appears
+TEST 6: Click "Import Fathom Data" → paste summary and transcript → data displays below notes
+TEST 7: In completed meeting, click "Add Task" → create a task → task appears linked to meeting
+TEST 8: Open meeting in another browser tab (simulating partner) → changes appear in real-time
+TEST 9: POST /api/meetings with invalid fathom_link format → returns 400 validation error
+TEST 10: Meetings page has loading skeleton while data loads, error boundary if API fails</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Create a new meeting → a Google Meet link appears automatically on the card</div>
+                    <div class="test-item">Click "Start Meeting" → Google Meet opens in browser, meeting card shows "In Progress" status</div>
+                    <div class="test-item">End meeting → paste a Fathom link → import summary → summary text displays cleanly</div>
+                    <div class="test-item">Create tasks from a completed meeting → tasks appear in the meeting detail AND in /tasks page</div>
+                    <div class="test-item">Open the app in two browser tabs → creating a meeting in one shows it in the other immediately</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 3: Tasks + Projects -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step" data-step="3">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">3</div>
+                <div class="step-title">Tasks Module & Client Projects</div>
+                <span class="step-badge badge-feature">Feature</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Build task management with kanban board, filtering, meeting/project linking. Build client projects with milestones and timeline.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE (do NOT touch these):
+- Step 1 ✅ Project setup (Next.js 14, Prisma schema, JWT auth, design system, DashboardLayout, seed data)
+- Step 2 ✅ Meetings module (Google Meet link generation, Fathom AI import, meeting lifecycle, task creation from meetings, real-time updates)
+
+DO NOT modify, rewrite, or break Steps 1-2. Build ON TOP of them.
+
+NOW implement Tasks and Client Projects:
+
+1. TASKS API:
+   - POST /api/tasks — create task (title, description, priority, assignee, due_date, meeting_id, project_id, tags)
+   - GET /api/tasks — list with filters (status, priority, assignee, project, meeting, date range, search)
+   - GET /api/tasks/[id] — single task detail
+   - PUT /api/tasks/[id] — update any field
+   - PATCH /api/tasks/[id]/status — update status only (for drag-drop)
+   - PATCH /api/tasks/[id]/assign — reassign task
+   - DELETE /api/tasks/[id] — soft delete
+   - GET /api/tasks/stats — counts by status, overdue count, per-assignee breakdown
+
+2. TASKS UI (src/app/(dashboard)/tasks/page.tsx):
+   - TWO views toggle: Kanban board (columns: TODO, IN_PROGRESS, IN_REVIEW, DONE) and List view
+   - Kanban: drag-and-drop between columns (updates status via PATCH)
+   - Task card: title, priority badge (color-coded), assignee avatar, due date, linked meeting/project indicator
+   - Filters bar: status, priority, assignee, project, search
+   - "New Task" button → modal with full form
+   - Task detail slide-over panel (click task → side panel shows full details, edit inline)
+   - Overdue tasks highlighted in red
+   - Real-time: partner's task changes appear instantly
+
+3. PROJECTS API:
+   - POST /api/projects — create project (name, description, client_id, status, start_date, end_date, budget)
+   - GET /api/projects — list with filters
+   - GET /api/projects/[id] — project detail with milestones and linked tasks
+   - PUT /api/projects/[id] — update project
+   - POST /api/projects/[id]/milestones — add milestone
+   - PUT /api/projects/[id]/milestones/[milestoneId] — update milestone
+   - GET /api/projects/[id]/timeline — get timeline view data
+   - DELETE /api/projects/[id] — soft delete
+
+4. PROJECTS UI (src/app/(dashboard)/projects/page.tsx):
+   - Project cards: name, client name, status badge, progress bar (milestones completed/total), date range
+   - Project detail page (/projects/[id]):
+     - Header with status, client, date range, budget
+     - Milestones section (ordered list, status badges, due dates)
+     - Timeline visualization (horizontal bar chart of milestones)
+     - Linked tasks section (filtered task list for this project)
+     - "Add Milestone" and "Link Task" buttons
+   - Status flow: PLANNING → ACTIVE → ON_HOLD → COMPLETED
+
+5. REAL-TIME for both modules via WebSocket broadcast on create/update/delete
+
+VERIFICATION TESTS (run these after implementation):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 1: Navigate to /tasks → Kanban board renders with tasks in correct columns
+TEST 2: Drag a task from TODO to IN_PROGRESS → status updates, card moves, persists on refresh
+TEST 3: Toggle to List view → same tasks shown in table format with sortable columns
+TEST 4: Create new task with priority HIGH → appears with red priority badge in correct column
+TEST 5: Filter by assignee → only that user's tasks shown
+TEST 6: Click a task → side panel opens with full details, can edit inline
+TEST 7: Navigate to /projects → project cards render with progress bars
+TEST 8: Click project → detail page shows milestones timeline + linked tasks
+TEST 9: Add milestone to project → appears in timeline visualization
+TEST 10: Create task linked to project → appears in project detail's task list
+TEST 11: Open /tasks in two tabs → drag task in one, appears moved in other (real-time)
+TEST 12: Tasks created from meeting (Step 2) appear in /tasks with meeting link indicator</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Drag a task card between kanban columns → it stays in the new column after refresh</div>
+                    <div class="test-item">Create a task from a meeting → it shows up in /tasks with a meeting link badge</div>
+                    <div class="test-item">Open a project → see milestones as a timeline + all linked tasks below</div>
+                    <div class="test-item">Filter tasks by priority "HIGH" → only high-priority tasks visible</div>
+                    <div class="test-item">Open tasks page in two browser windows → changes in one reflect in the other instantly</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 4: CRM + Communication Tracking -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step" data-step="4">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">4</div>
+                <div class="step-title">Client Management — CRM + Communication Tracking + AI Insights</div>
+                <span class="step-badge badge-integration">Integration</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Build the CRM with pipeline management, connect Gmail and WhatsApp for communication tracking, add manual logs, and generate AI-powered insights via Vertex AI.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE (do NOT touch these):
+- Step 1 ✅ Project setup (Next.js 14, Prisma schema, JWT auth, design system, DashboardLayout, seed data)
+- Step 2 ✅ Meetings module (Google Meet link generation, Fathom AI import, meeting lifecycle, task creation from meetings, real-time updates)
+- Step 3 ✅ Tasks module (Kanban board, drag-drop, filters, side panel) + Projects module (milestones, timeline, linked tasks)
+
+DO NOT modify, rewrite, or break Steps 1-3. Build ON TOP of them.
+
+NOW implement the Client Management & Communication Tracking system:
+
+1. CLIENT CRM API:
+   - POST /api/clients — create client (name, email, phone, company, pipeline_stage, source, value)
+   - GET /api/clients — list with filters (pipeline_stage, search, date range)
+   - GET /api/clients/[id] — full client detail + interactions + communication timeline
+   - PUT /api/clients/[id] — update client
+   - PATCH /api/clients/[id]/pipeline — update pipeline stage (validate transitions: LEAD→CONTACTED→PROPOSAL→NEGOTIATION→ACTIVE; any→CHURNED; CHURNED→LEAD)
+   - POST /api/clients/[id]/interactions — add interaction log
+   - GET /api/clients/pipeline — get pipeline board view (clients grouped by stage)
+   - DELETE /api/clients/[id] — soft delete
+
+2. GMAIL INTEGRATION (src/lib/integrations/gmail.ts):
+   - Use same Google OAuth 2.0 setup from Step 2 (add gmail.readonly scope)
+   - POST /api/clients/[id]/connect-gmail — store the email address to track for this client
+   - POST /api/clients/[id]/disconnect-gmail — remove Gmail tracking
+   - POST /api/clients/[id]/communications/fetch — fetch emails matching client's email for a given timeframe
+   - Deduplicate by message_id (never store duplicates)
+   - Store as communication_logs with source=GMAIL
+
+3. WHATSAPP INTEGRATION (src/lib/integrations/whatsapp.ts):
+   - POST /api/clients/[id]/connect-whatsapp — store phone number to track
+   - POST /api/clients/[id]/disconnect-whatsapp — remove WhatsApp tracking
+   - Fetch messages via WhatsApp Business Cloud API for the client's phone number
+   - Store as communication_logs with source=WHATSAPP
+   - Webhook: POST /api/webhooks/whatsapp — receive incoming message notifications
+
+4. MANUAL LOGS:
+   - POST /api/clients/[id]/communications/log — add manual entry (body, direction, optional subject)
+   - Stored as communication_logs with source=MANUAL
+   - Both users can add manual logs about conversations, calls, requirements
+
+5. "LATEST UPDATE" FEATURE:
+   - POST /api/clients/[id]/communications/fetch — accepts timeframe (start_date, end_date)
+   - Fetches from all connected channels (Gmail + WhatsApp) for that period
+   - Combines with existing manual logs
+   - Returns unified timeline sorted by date
+
+6. AI COMMUNICATION INSIGHTS (src/lib/ai/communication-insights.ts):
+   - POST /api/clients/[id]/insights/generate — triggers Vertex AI analysis
+   - Takes all communications in timeframe, sends to Gemini Pro with prompt:
+     "Analyze these client communications. Provide: 1) Summary, 2) Key topics discussed, 3) Any change requests or requirement modifications, 4) Action items needed, 5) Overall sentiment (positive/neutral/negative/mixed)"
+   - Stores result as client_insight
+   - GET /api/clients/[id]/insights — list all generated insights
+   - GET /api/clients/[id]/insights/daily — generate daily digest
+   - GET /api/clients/[id]/insights/weekly — generate weekly digest
+
+7. CLIENT UI:
+   - Pipeline board view (Kanban-style): columns for each stage, drag to move between stages
+   - Client list view (table): name, company, stage, last contact, value, actions
+   - Client detail page (/clients/[id]):
+     - Header: name, company, stage badge, contact info, value
+     - "Connect Gmail" / "Connect WhatsApp" buttons (show connected status)
+     - COMMUNICATION TIMELINE: unified feed of all logs (Gmail, WhatsApp, Manual) with source badges, timestamps, direction indicators
+     - "Latest Update" button with date range picker → fetches + shows comms for that period
+     - "Generate Insights" button → calls AI → shows summary card with key topics, action items, change requests, sentiment indicator
+     - Insights history (past digests)
+     - Interactions section (legacy interaction logs)
+     - "Add Manual Log" button → quick-add modal
+   - Pipeline stage indicator with valid transition arrows
+
+VERIFICATION TESTS (run these after implementation):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 1: Navigate to /clients → pipeline board shows clients in correct stage columns
+TEST 2: Drag client from LEAD to CONTACTED → stage updates, persists
+TEST 3: Try dragging from LEAD to ACTIVE (invalid) → error toast, client stays in LEAD
+TEST 4: Click client → detail page shows header, timeline, and action buttons
+TEST 5: Click "Connect Gmail" → shows email input, saves connected email on client
+TEST 6: Click "Latest Update" with last 7 days → fetches and displays communications (or shows empty state if no API configured)
+TEST 7: Click "Add Manual Log" → type a note → it appears in the communication timeline immediately
+TEST 8: Click "Generate Insights" → loading state → AI summary card appears with key topics and sentiment
+TEST 9: Communication timeline shows source badges (Gmail icon, WhatsApp icon, Manual icon) with correct colors
+TEST 10: POST /api/clients/[id]/communications/log with body text → returns 201, appears in timeline
+TEST 11: Fetch communications twice with same data → no duplicates in timeline (deduplication works)
+TEST 12: Client insights show action items as a checklist and change requests highlighted in orange</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Drag clients between pipeline stages → valid moves work, invalid moves show error</div>
+                    <div class="test-item">Open a client → see the communication timeline with different source badges (email/whatsapp/manual)</div>
+                    <div class="test-item">Add a manual log entry → it appears instantly in the timeline with "Manual" badge</div>
+                    <div class="test-item">Click "Generate Insights" → see AI summary with topics, sentiment indicator, and action items</div>
+                    <div class="test-item">Click "Latest Update" with date range → communications load for that period</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 5: Content Management + AI -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step" data-step="5">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">5</div>
+                <div class="step-title">Content Management — Calendar, Ideas & AI Validation</div>
+                <span class="step-badge badge-feature">Feature</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Build content management with calendar view, content ideas logging, and Vertex AI integration for idea validation, outline generation, and trend analysis.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE (do NOT touch these):
+- Step 1 ✅ Project setup (Next.js 14, Prisma schema, JWT auth, design system, DashboardLayout, seed data)
+- Step 2 ✅ Meetings module (Google Meet link generation, Fathom AI import, meeting lifecycle, task creation from meetings, real-time updates)
+- Step 3 ✅ Tasks module (Kanban board, drag-drop, filters, side panel) + Projects module (milestones, timeline, linked tasks)
+- Step 4 ✅ Client Management (CRM pipeline, Gmail/WhatsApp integration, communication tracking, manual logs, AI insights via Vertex AI)
+
+DO NOT modify, rewrite, or break Steps 1-4. Build ON TOP of them.
+
+NOW implement the Content Management module with AI:
+
+1. CONTENT ITEMS API:
+   - POST /api/content — create content item (title, body, type, status, product_id, platforms, tags)
+   - GET /api/content — list with filters (type, status, platform, date range, search)
+   - GET /api/content/[id] — single content detail
+   - PUT /api/content/[id] — update content
+   - PATCH /api/content/[id]/schedule — set publish_date + change status to SCHEDULED
+   - GET /api/content/calendar — get content items organized by publish_date for calendar view
+   - DELETE /api/content/[id] — soft delete
+
+2. CONTENT IDEAS API:
+   - POST /api/content/ideas — log new content idea (title, description, content_type, target_audience, tags)
+   - GET /api/content/ideas — list ideas with filters (status, content_type, search)
+   - GET /api/content/ideas/[id] — idea detail with validation, outline, trend data
+   - PUT /api/content/ideas/[id] — update idea
+   - POST /api/content/ideas/[id]/validate — trigger Vertex AI validation (feasibility, audience fit, originality scoring 0-1.0)
+   - POST /api/content/ideas/[id]/outline — generate content outline via Vertex AI (sections, key points, estimated word count, read time)
+   - POST /api/content/ideas/[id]/suggestions — get development suggestions from AI (format, angle, distribution, timing)
+   - POST /api/content/ideas/[id]/trend-validate — validate against market trends via Vertex AI
+   - DELETE /api/content/ideas/[id] — soft delete
+
+3. VERTEX AI CONTENT PROMPTS (src/lib/ai/content-ai.ts):
+   - validateContentIdea(idea): Prompt Gemini Pro to score feasibility (0-1), audience fit (0-1), originality (0-1), provide strengths/weaknesses/recommendations
+   - buildContentOutline(idea): Prompt AI to generate structured outline with sections, key points per section, estimated metrics
+   - getDevelopmentSuggestions(idea): Prompt for suggestions on format, angle, distribution channels, timing
+   - validateTrend(idea): Prompt to analyze if the topic is currently trending, related trends, competitor content, recommended timing
+
+4. CONTENT UI (src/app/(dashboard)/content/page.tsx):
+   - TWO tabs: "Content Pipeline" and "Content Ideas"
+   - Content Pipeline tab:
+     - Calendar view (month/week toggle) showing scheduled content on their publish dates
+     - List view toggle with status badges, type icons, platform tags
+     - Click content item → detail editor (Tiptap rich text for body)
+     - "New Content" button → modal with type selector, platforms, scheduling
+   - Content Ideas tab:
+     - Ideas grid/list with status badges and AI validation scores
+     - "Log New Idea" button → modal (title, description, type, target audience)
+     - Idea detail view (/content/ideas/[id]):
+       - Header: title, type, status, target audience
+       - "Validate with AI" button → shows loading → displays score cards (feasibility, audience fit, originality) with color-coded indicators
+       - "Generate Outline" button → displays outline with sections and key points
+       - "Get Suggestions" button → shows development suggestions in cards
+       - "Check Trends" button → shows trend analysis (trending badge, related topics, timing recommendation)
+       - Status progression: RAW → VALIDATING → VALIDATED → OUTLINED → IN_DEVELOPMENT
+     - Quick AI actions: batch validate multiple ideas
+
+VERIFICATION TESTS (run these after implementation):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 1: Navigate to /content → Content Pipeline tab shows calendar with scheduled content items
+TEST 2: Create new content item with type BLOG_POST → appears in list and calendar on publish date
+TEST 3: Schedule content → status changes to SCHEDULED, appears on calendar at correct date
+TEST 4: Switch to "Content Ideas" tab → see ideas list with status badges
+TEST 5: Log new idea → appears in list with RAW status
+TEST 6: Click "Validate with AI" on an idea → loading state → score cards appear (3 scores 0-1.0)
+TEST 7: Click "Generate Outline" → sections render with key points and estimated read time
+TEST 8: Click "Check Trends" → trending indicator shows (green if trending, gray if not) with related topics
+TEST 9: Idea status progresses: after validation → VALIDATED, after outline → OUTLINED
+TEST 10: Content calendar shows correct items on correct days when toggling month/week view
+TEST 11: Edit content body with Tiptap editor → rich text saves correctly (bold, lists, headings)
+TEST 12: API returns 400 if trying to schedule content with empty body</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Content calendar shows items on their scheduled dates (visual check)</div>
+                    <div class="test-item">Log a new content idea → click "Validate with AI" → see score cards appear</div>
+                    <div class="test-item">Generate an outline for an idea → sections and key points display cleanly</div>
+                    <div class="test-item">Check trends → see whether the topic is trending with related topics listed</div>
+                    <div class="test-item">Edit content body → formatting (bold, headers, lists) works and saves</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 6: Ideas Management + Product Ideas -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step" data-step="6">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">6</div>
+                <div class="step-title">Ideas Management — Product Ideas + Fact-Checking + AI Validation</div>
+                <span class="step-badge badge-feature">Feature</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Build the product ideas module with categories, AI-powered validation and fact-checking via Vertex AI, confidence scoring, and validation history tracking.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE (do NOT touch these):
+- Step 1 ✅ Project setup (Next.js 14, Prisma schema, JWT auth, design system, DashboardLayout, seed data)
+- Step 2 ✅ Meetings module (Google Meet link generation, Fathom AI import, meeting lifecycle, task creation from meetings, real-time updates)
+- Step 3 ✅ Tasks module (Kanban board, drag-drop, filters, side panel) + Projects module (milestones, timeline, linked tasks)
+- Step 4 ✅ Client Management (CRM pipeline, Gmail/WhatsApp integration, communication tracking, manual logs, AI insights via Vertex AI)
+- Step 5 ✅ Content Management (calendar view, content ideas with AI validation/outline/trend checking, Tiptap editor, scheduling)
+
+DO NOT modify, rewrite, or break Steps 1-5. Build ON TOP of them.
+
+NOW implement the Product Ideas Management module:
+
+1. IDEAS API:
+   - POST /api/ideas — create idea (title, description, category[PRODUCT/FEATURE/CONTENT/BUSINESS/OTHER], impact, effort, tags)
+   - GET /api/ideas — list with filters (category, status, impact, effort, search)
+   - GET /api/ideas/[id] — idea detail with all validation results
+   - PUT /api/ideas/[id] — update idea
+   - POST /api/ideas/[id]/validate — full AI validation (general feasibility + market fit + originality)
+   - POST /api/ideas/[id]/fact-check — extract claims from description, fact-check each individually via Vertex AI
+   - GET /api/ideas/[id]/validations — validation history
+   - PATCH /api/ideas/[id]/status — update status (RAW→VALIDATED→APPROVED→REJECTED→IMPLEMENTED)
+   - DELETE /api/ideas/[id] — soft delete
+
+2. VERTEX AI IDEA ENGINE (src/lib/ai/idea-validation.ts):
+   - validateIdea(idea): Send to Gemini Pro → get overall confidence score (0-1), market assessment, competitor landscape
+   - factCheckIdea(idea): Extract factual claims from description → validate each claim individually → return per-claim results with explanations and sources
+   - Confidence formula: validClaims / totalClaims
+   - Temperature: 0.3 for general validation, 0.1 for fact-checking (more deterministic)
+   - Store all validation results with prompt+response for audit trail
+
+3. IDEAS UI (src/app/(dashboard)/ideas/page.tsx):
+   - Grid view: idea cards with title, category badge, status badge, impact/effort matrix indicators, confidence score (if validated)
+   - Impact/Effort matrix view (2x2 quadrant chart): plot ideas by impact vs effort
+   - "New Idea" button → modal (title, rich text description, category, impact, effort, tags)
+   - Idea detail page (/ideas/[id]):
+     - Header: title, category, status, impact/effort badges
+     - Description (rich text display)
+     - AI VALIDATION SECTION:
+       - "Validate Idea" button → shows loading spinner → displays confidence meter (0-100%), market assessment text
+       - "Fact-Check" button → extracts claims → shows each claim with ✓/✗ indicator, explanation, sources
+       - Validation history: expandable list of past validations with timestamps
+     - STATUS ACTIONS: buttons to move through status flow (Approve, Reject, Mark Implemented)
+   - Quick filters: by category, status, confidence range
+   - Sort by: newest, highest confidence, highest impact
+
+VERIFICATION TESTS (run these after implementation):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 1: Navigate to /ideas → grid of idea cards renders with category badges
+TEST 2: Create new idea with category PRODUCT → appears in grid with correct badge
+TEST 3: Click "Validate Idea" → loading → confidence score appears (0-100% meter)
+TEST 4: Click "Fact-Check" → claims extracted → each shows ✓ or ✗ with explanation
+TEST 5: Confidence score matches: valid claims / total claims formula
+TEST 6: View validation history → shows timestamps and previous scores
+TEST 7: Change status: RAW → VALIDATED → APPROVED → shows correct badge progression
+TEST 8: Impact/Effort matrix view plots ideas in correct quadrants
+TEST 9: Filter by category "FEATURE" → only feature ideas shown
+TEST 10: Sort by confidence descending → highest-scored ideas appear first
+TEST 11: Fact-check results show source links where available
+TEST 12: API rejects validation request if Vertex AI is unavailable → graceful error shown to user</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Create a product idea → click "Validate" → see confidence score meter fill up</div>
+                    <div class="test-item">Click "Fact-Check" → individual claims show with checkmarks or X marks</div>
+                    <div class="test-item">See the Impact/Effort matrix with ideas plotted as dots in quadrants</div>
+                    <div class="test-item">Move idea through statuses (RAW → VALIDATED → APPROVED) → badge updates</div>
+                    <div class="test-item">Check validation history → previous validation attempts are listed with timestamps</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 7: Shared Workspace -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step" data-step="7">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">7</div>
+                <div class="step-title">Shared Workspace — Collaborative Pages, Folders & Real-time Editing</div>
+                <span class="step-badge badge-feature">Feature</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Build the Notion-like shared workspace with block-based pages, folder organization, real-time collaborative editing via WebSocket, and full-text search.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE (do NOT touch these):
+- Step 1 ✅ Project setup (Next.js 14, Prisma schema, JWT auth, design system, DashboardLayout, seed data)
+- Step 2 ✅ Meetings module (Google Meet link generation, Fathom AI import, meeting lifecycle, task creation from meetings, real-time updates)
+- Step 3 ✅ Tasks module (Kanban board, drag-drop, filters, side panel) + Projects module (milestones, timeline, linked tasks)
+- Step 4 ✅ Client Management (CRM pipeline, Gmail/WhatsApp integration, communication tracking, manual logs, AI insights via Vertex AI)
+- Step 5 ✅ Content Management (calendar view, content ideas with AI validation/outline/trend checking, Tiptap editor, scheduling)
+- Step 6 ✅ Ideas Management (product ideas, AI validation with confidence scoring, fact-checking per claim, impact/effort matrix)
+
+DO NOT modify, rewrite, or break Steps 1-6. Build ON TOP of them.
+
+NOW implement the Shared Workspace (Notion-like collaborative space):
+
+1. WORKSPACE API:
+   - POST /api/workspace/pages — create page (title, content blocks, folder_id, icon)
+   - GET /api/workspace/pages — list pages (optional folder filter, recent, search)
+   - GET /api/workspace/pages/[id] — get page with all blocks
+   - PUT /api/workspace/pages/[id] — update page content (full block replacement)
+   - PATCH /api/workspace/pages/[id] — partial update (single block operations)
+   - DELETE /api/workspace/pages/[id] — soft delete (move to trash)
+   - GET /api/workspace/pages/recent — last 10 edited pages
+   - GET /api/workspace/search?q=term — full-text search across all page content
+
+2. FOLDERS API:
+   - POST /api/workspace/folders — create folder (name, parent_id, icon)
+   - GET /api/workspace/folders — get folder tree (nested structure)
+   - PUT /api/workspace/folders/[id] — rename/move folder
+   - DELETE /api/workspace/folders/[id] — delete (must be empty or move children)
+   - Enforce max 5 levels of nesting
+
+3. REAL-TIME COLLABORATIVE EDITING:
+   - WebSocket channel per page: "workspace:page:{id}"
+   - When user edits a block, broadcast the operation to the other user
+   - Use simple last-write-wins for conflict resolution (only 2 users, low conflict risk)
+   - Show presence indicator: "Partner is viewing this page" / "Partner is editing..."
+   - Auto-save every 2 seconds of inactivity after edit
+
+4. BLOCK-BASED EDITOR (Tiptap):
+   - Block types: Text (paragraph), Heading (H1/H2/H3), Bullet List, Numbered List, Code Block, Image, Embed (URL), Divider, Table
+   - Slash command menu: type "/" to select block type
+   - Drag handles on blocks for reordering
+   - Toolbar: bold, italic, strike, code, link, heading levels
+   - Image upload: drag-drop or paste → upload to GCS → insert block
+
+5. WORKSPACE UI (src/app/(dashboard)/workspace/page.tsx):
+   - LEFT SIDEBAR: folder tree (expandable/collapsible) + page list per folder
+   - MAIN AREA: page editor (Tiptap with blocks)
+   - Page header: editable title (click to edit), icon picker, cover image
+   - "New Page" button in sidebar → creates page in current folder
+   - "New Folder" button → creates subfolder
+   - Breadcrumb navigation showing folder path
+   - Search bar at top → searches across all pages, shows results in dropdown
+   - Recent pages section at top of sidebar
+   - Presence indicator in page header: "👤 Partner is here"
+
+VERIFICATION TESTS (run these after implementation):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 1: Navigate to /workspace → sidebar shows folder tree + recent pages
+TEST 2: Create new page → editor opens with empty Tiptap canvas, title editable
+TEST 3: Type "/" in editor → slash command menu appears with block types
+TEST 4: Add heading, paragraph, bullet list, code block → all render correctly
+TEST 5: Create folder with subfolder → nesting displays in tree, max 5 levels enforced
+TEST 6: Move page to different folder → page appears in new location in sidebar
+TEST 7: Search "keyword" → results show pages containing that text
+TEST 8: Open same page in two browser tabs → edit in one → change appears in other (real-time)
+TEST 9: Presence indicator shows when both tabs have the same page open
+TEST 10: Drag blocks to reorder → order persists after refresh
+TEST 11: Upload image via drag-drop → image block appears with uploaded image
+TEST 12: Auto-save works: edit text, wait 2 seconds, refresh → changes preserved</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Create a page → type content with different block types (headings, lists, code) → all render nicely</div>
+                    <div class="test-item">Open same page in two browsers → type in one → text appears in the other in real-time</div>
+                    <div class="test-item">Create folders → organize pages into them → folder tree updates</div>
+                    <div class="test-item">Search for text → correct pages show up in results</div>
+                    <div class="test-item">Type "/" → slash command menu appears with block type options</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 8: Dashboard + Analytics + Test Site -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step" data-step="8">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">8</div>
+                <div class="step-title">Dashboard, Analytics & Test Site (Nanobana + Veo)</div>
+                <span class="step-badge badge-integration">Integration</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Build the unified dashboard with social/website analytics, and the Test Site module for visual/video generation testing with Nanobana and Veo APIs.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE (do NOT touch these):
+- Step 1 ✅ Project setup (Next.js 14, Prisma schema, JWT auth, design system, DashboardLayout, seed data)
+- Step 2 ✅ Meetings module (Google Meet link generation, Fathom AI import, meeting lifecycle, task creation from meetings, real-time updates)
+- Step 3 ✅ Tasks module (Kanban board, drag-drop, filters, side panel) + Projects module (milestones, timeline, linked tasks)
+- Step 4 ✅ Client Management (CRM pipeline, Gmail/WhatsApp integration, communication tracking, manual logs, AI insights via Vertex AI)
+- Step 5 ✅ Content Management (calendar view, content ideas with AI validation/outline/trend checking, Tiptap editor, scheduling)
+- Step 6 ✅ Ideas Management (product ideas, AI validation with confidence scoring, fact-checking per claim, impact/effort matrix)
+- Step 7 ✅ Shared Workspace (Notion-like pages, folders up to 5 levels, block editor with Tiptap, real-time collaboration, search, presence indicators)
+
+DO NOT modify, rewrite, or break Steps 1-7. Build ON TOP of them.
+
+NOW implement Dashboard + Analytics and the Test Site module:
+
+1. DASHBOARD API:
+   - GET /api/dashboard/overview — aggregated stats: total tasks (by status), upcoming meetings, active projects, client pipeline summary, recent activity feed
+   - GET /api/dashboard/social — social media metrics (followers, engagement rate, recent posts) from connected accounts
+   - GET /api/dashboard/analytics — website analytics (page views, sessions, bounce rate) for tracked sites
+   - POST /api/dashboard/accounts — add tracked social/analytics account (platform, account_id, credentials)
+   - DELETE /api/dashboard/accounts/[id] — remove tracked account
+   - GET /api/dashboard/accounts — list all tracked accounts with last-refresh timestamp
+
+2. DASHBOARD UI (src/app/(dashboard)/dashboard/page.tsx):
+   - TOP ROW: Stat cards (total tasks, pending meetings today, active clients, scheduled content) — animated counters
+   - SECOND ROW: Quick charts — tasks by status (donut), meetings this week (bar), pipeline (funnel)
+   - SOCIAL SECTION: Connected social accounts with key metrics (followers, engagement) per platform
+   - ANALYTICS SECTION: Website stats per tracked site (page views chart, sessions, top pages)
+   - ACTIVITY FEED: Recent actions across all modules (meeting created, task completed, client moved, etc.)
+   - "Add Account" button for connecting new social/analytics sources
+   - Auto-refresh every 5 minutes with cache indicators
+   - Loading skeletons for each section while data loads
+
+3. TEST SITE API:
+   - POST /api/test-site/prompts — submit prompt (prompt text, provider[NANOBANA/VEO], parameters JSON)
+   - GET /api/test-site/prompts/[id] — get result (may be PENDING/PROCESSING/COMPLETED/FAILED)
+   - GET /api/test-site/history — paginated list of all past prompts with results
+   - DELETE /api/test-site/prompts/[id] — delete prompt+result
+   - POST /api/test-site/prompts/[id]/retry — resubmit same prompt
+
+4. TEST SITE INTEGRATIONS:
+   - src/lib/integrations/nanobana.ts:
+     - submitImagePrompt(prompt, parameters) → call Nanobana API → return image URL
+     - Timeout: 60 seconds
+     - Store output URL in test_results table
+   - src/lib/integrations/veo.ts:
+     - submitVideoPrompt(prompt, parameters) → call Veo API → return video URL
+     - Timeout: 120 seconds
+     - Store output URL in test_results table
+   - Both: handle errors gracefully, mark FAILED with error message
+
+5. TEST SITE UI (src/app/(dashboard)/test-site/page.tsx):
+   - PROMPT INPUT AREA:
+     - Large text area for prompt
+     - Provider toggle: Nanobana (Image) / Veo (Video)
+     - Optional parameters panel (style, resolution for Nanobana; duration, style for Veo)
+     - "Generate" button
+   - OUTPUT DISPLAY:
+     - Shows loading/processing animation while generating
+     - Image: displays the generated image with zoom/fullscreen option
+     - Video: embedded video player with playback controls
+     - Error state: shows error message + "Retry" button
+   - HISTORY PANEL (right sidebar or below):
+     - List of past prompts with thumbnails of outputs
+     - Click to view full output
+     - "Retry" button on each to resubmit
+     - Delete option
+   - SPLIT VIEW: prompt input left, output right (desktop layout)
+
+VERIFICATION TESTS (run these after implementation):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 1: Navigate to /dashboard → stat cards render with real counts from database
+TEST 2: Charts show correct data: tasks by status matches actual task counts
+TEST 3: Activity feed shows recent actions from all modules (meeting created, task done, etc.)
+TEST 4: Social section shows connected accounts (or empty state with "Connect" button)
+TEST 5: Dashboard auto-refreshes after 5 minutes (check network tab for API calls)
+TEST 6: Navigate to /test-site → prompt input area + provider toggle visible
+TEST 7: Enter a prompt, select Nanobana, click Generate → loading animation → image appears (or error if API not configured)
+TEST 8: Switch to Veo, enter video prompt, generate → video player appears with result
+TEST 9: Generated results appear in history panel with timestamps
+TEST 10: Click "Retry" on a history item → same prompt resubmitted, new result generated
+TEST 11: Failed generation shows error message clearly with "Retry" button
+TEST 12: Test Site history persists across page refreshes (stored in DB)</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Dashboard shows real numbers (task counts, meeting counts) that match actual data</div>
+                    <div class="test-item">Charts are interactive (hover shows values)</div>
+                    <div class="test-item">Go to Test Site → type a prompt → select Nanobana → click Generate → see loading then result</div>
+                    <div class="test-item">Switch to Veo → generate video → see video player with the output</div>
+                    <div class="test-item">Check history panel → all previous generations are listed with thumbnails</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 9: Real-time Engine + Notifications -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step" data-step="9">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">9</div>
+                <div class="step-title">Real-time Engine, Notifications & WebSocket Infrastructure</div>
+                <span class="step-badge badge-foundation">Foundation</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Build the WebSocket infrastructure for real-time sync across all modules, presence tracking, and the notification system with unread counts.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE (do NOT touch these):
+- Step 1 ✅ Project setup (Next.js 14, Prisma schema, JWT auth, design system, DashboardLayout, seed data)
+- Step 2 ✅ Meetings module (Google Meet link generation, Fathom AI import, meeting lifecycle, task creation, basic real-time)
+- Step 3 ✅ Tasks module (Kanban board, drag-drop, filters) + Projects module (milestones, timeline)
+- Step 4 ✅ Client Management (CRM pipeline, Gmail/WhatsApp integration, communication tracking, AI insights)
+- Step 5 ✅ Content Management (calendar view, content ideas with AI validation/outline/trends)
+- Step 6 ✅ Ideas Management (product ideas, AI validation, fact-checking, impact/effort matrix)
+- Step 7 ✅ Shared Workspace (Notion-like pages, folders, block editor, basic real-time editing, search)
+- Step 8 ✅ Dashboard (stats, charts, social/analytics) + Test Site (Nanobana/Veo prompt→generate→display)
+
+DO NOT modify, rewrite, or break Steps 1-8. Build ON TOP of them.
+
+NOW consolidate the real-time system + build notifications:
+
+1. WEBSOCKET SERVER (src/lib/realtime/socket-server.ts):
+   - Socket.io server with JWT auth on connect
+   - Channels: "global", "meetings:{id}", "tasks", "clients:{id}", "workspace:{pageId}", "test-site"
+   - Presence tracking per page/module
+   - Auto-reconnection with exponential backoff
+
+2. REAL-TIME CONTEXT (src/contexts/RealtimeContext.tsx):
+   - Single connection on login, hooks: useRealtimeChannel, usePresence, useNotifications
+   - Connection status indicator
+
+3. NOTIFICATIONS:
+   - APIs: GET /api/notifications, GET /unread-count, PATCH /[id]/read, PATCH /mark-all-read
+   - Push via WebSocket (instant, no polling)
+   - Triggers: meeting started, task assigned, client stage changed, AI completed, generation done, page edited
+
+4. NOTIFICATION UI: Bell icon + unread badge + dropdown list + navigation on click
+
+5. BROADCAST: Update all module APIs to emit events on create/update/delete + create notifications
+
+VERIFICATION TESTS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 1: WebSocket connects on login (check DevTools WS tab)
+TEST 2: Two tabs open → both connect
+TEST 3: Create meeting in Tab 1 → notification in Tab 2 instantly
+TEST 4: Bell shows real unread count
+TEST 5: Click notification → navigates to item
+TEST 6: Mark as read → count decreases
+TEST 7: "Mark all read" → count = 0
+TEST 8: Task assigned → partner gets notification
+TEST 9: Workspace edit → appears in other tab in &lt;1s
+TEST 10: Disconnect internet → "Reconnecting" indicator → auto-reconnects
+TEST 11: Presence shows on shared workspace page
+TEST 12: Test Site generation → notification to both users</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Notification bell shows a real number — changes when actions happen in other tab</div>
+                    <div class="test-item">Click bell → notification list with timestamps</div>
+                    <div class="test-item">Create task in one browser → appears in other without refresh</div>
+                    <div class="test-item">Disconnect wifi → "Reconnecting" appears → reconnects when back online</div>
+                    <div class="test-item">Open workspace page in two windows → see presence indicator</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 10: Settings + OAuth -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step" data-step="10">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">10</div>
+                <div class="step-title">Settings, OAuth Configuration & Environment Setup</div>
+                <span class="step-badge badge-feature">Feature</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Build the settings page for managing API connections, OAuth flows, theme preferences, and user profile.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE (do NOT touch these):
+- Step 1 ✅ Project setup (Next.js 14, Prisma, JWT auth, design system, seed data)
+- Step 2 ✅ Meetings (Google Meet, Fathom AI, lifecycle, tasks)
+- Step 3 ✅ Tasks (Kanban, drag-drop) + Projects (milestones, timeline)
+- Step 4 ✅ CRM (pipeline, Gmail/WhatsApp, communication tracking, AI insights)
+- Step 5 ✅ Content (calendar, ideas, AI validation/outline/trends)
+- Step 6 ✅ Ideas (validation, fact-checking, matrix)
+- Step 7 ✅ Workspace (pages, folders, editor, real-time, search)
+- Step 8 ✅ Dashboard + Test Site (Nanobana/Veo)
+- Step 9 ✅ Real-time (WebSocket, notifications, presence, broadcasts)
+
+DO NOT modify Steps 1-9. Build ON TOP.
+
+NOW implement Settings:
+
+1. SETTINGS API: GET/PUT /api/settings, GET /api/settings/integrations, POST /api/settings/profile, PUT /api/settings/theme
+
+2. OAUTH: POST /api/auth/google/connect (Calendar+Gmail), callback, disconnect, status. POST /api/auth/whatsapp/connect + disconnect + status.
+
+3. SETTINGS UI — Tabs: Profile (name, avatar, password), Integrations (Google status + connect/disconnect, WhatsApp config, Nanobana key + test, Veo status, Fathom info), Appearance (dark/light/system, accent color, density), About (version, services summary)
+
+4. Create .env.example with ALL variables documented with comments
+
+VERIFICATION TESTS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 1: /settings renders all tabs
+TEST 2: Edit profile name → updates in TopBar
+TEST 3: "Connect Google" → OAuth flow opens
+TEST 4: Dark mode toggle works app-wide
+TEST 5: .env.example lists all variables
+TEST 6: Integration status accurate
+TEST 7: Nanobana "Test Connection" verifies key
+TEST 8: Settings persist after refresh</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Settings page loads → all tabs work</div>
+                    <div class="test-item">Change name → top bar updates</div>
+                    <div class="test-item">Toggle dark mode → app changes theme</div>
+                    <div class="test-item">Integrations show connected/disconnected status</div>
+                    <div class="test-item">.env.example exists with all variables</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 11: UI Polish -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step" data-step="11">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">11</div>
+                <div class="step-title">Premium UI Polish — Apple-Inspired Design & Animations</div>
+                <span class="step-badge badge-ui">UI/UX</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Apply premium Apple-inspired design. Micro-animations, loading skeletons, error boundaries, and consistent design language across all pages.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE (do NOT touch these):
+- Step 1 ✅ Project setup (Next.js 14, Prisma, auth, base design)
+- Step 2 ✅ Meetings (Google Meet, Fathom, lifecycle)
+- Step 3 ✅ Tasks (Kanban) + Projects (timeline)
+- Step 4 ✅ CRM (pipeline, Gmail/WhatsApp, AI insights)
+- Step 5 ✅ Content (calendar, ideas, AI)
+- Step 6 ✅ Ideas (validation, fact-checking)
+- Step 7 ✅ Workspace (pages, editor, real-time)
+- Step 8 ✅ Dashboard + Test Site
+- Step 9 ✅ Real-time (WebSocket, notifications)
+- Step 10 ✅ Settings (OAuth, integrations, theme)
+
+DO NOT change functionality — ONLY styling, animations, error handling.
+
+POLISH:
+
+1. DESIGN TOKENS: Inter variable font, zinc scale, blue-500 primary, layered shadows, 12px radius, cubic-bezier(0.32, 0.72, 0, 1) spring feel, backdrop-blur
+
+2. ANIMATIONS (Framer Motion): page transitions (fade+slide 200ms), card hover (scale 1.01), button press (scale 0.98), counter animations, skeleton shimmer, toast slide-in, modal scale-up, tab cross-fade
+
+3. SKELETONS: CardSkeleton, TableSkeleton, KanbanSkeleton, ChartSkeleton, EditorSkeleton — all match final layout
+
+4. ERROR BOUNDARIES: every page wrapped, friendly UI, toast on API errors, network indicator
+
+5. CONSISTENCY: 8px grid, hover/active on all buttons, empty states with CTAs, sticky headers, tooltips, keyboard shortcut hints (⌘K search), mobile sidebar collapse
+
+VERIFICATION TESTS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 1: Smooth page transitions
+TEST 2: Card hover animations
+TEST 3: Button press effect
+TEST 4: Skeletons on slow network
+TEST 5: Error boundary on crash
+TEST 6: Toast on API error
+TEST 7: Dark mode everywhere
+TEST 8: Empty states are helpful
+TEST 9: Mobile responsive
+TEST 10: Feels premium overall</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Navigate pages → smooth transitions, no harsh jumps</div>
+                    <div class="test-item">Hover cards/buttons → subtle animations</div>
+                    <div class="test-item">Throttle network → skeletons appear</div>
+                    <div class="test-item">Force error → friendly page, not white screen</div>
+                    <div class="test-item">Does it feel like Apple.com? Clean, spacious, elegant?</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 12: Final Validation + Deployment -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step" data-step="12">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">12</div>
+                <div class="step-title">Final Validation, E2E Testing & Deployment Guide</div>
+                <span class="step-badge badge-checkpoint">Checkpoint</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Final validation, end-to-end flow testing, performance checks, and deployment documentation with API setup guides.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE (do NOT touch these):
+- Step 1 ✅ Project setup (Next.js 14, Prisma, JWT auth, design system, seed data)
+- Step 2 ✅ Meetings (Google Meet link gen, Fathom AI, lifecycle, task creation)
+- Step 3 ✅ Tasks (Kanban, drag-drop) + Projects (milestones, timeline)
+- Step 4 ✅ CRM (pipeline, Gmail/WhatsApp, communication tracking, AI insights)
+- Step 5 ✅ Content (calendar, ideas, AI validation/outline/trends)
+- Step 6 ✅ Ideas (AI validation, fact-checking, impact/effort matrix)
+- Step 7 ✅ Workspace (pages, folders, block editor, real-time, search)
+- Step 8 ✅ Dashboard (stats, charts) + Test Site (Nanobana/Veo)
+- Step 9 ✅ Real-time (WebSocket, notifications, presence, broadcasts)
+- Step 10 ✅ Settings (OAuth, integrations, theme)
+- Step 11 ✅ UI polish (Apple design, animations, skeletons, error boundaries)
+
+DO NOT rebuild. Only test, fix, and document.
+
+1. END-TO-END FLOWS (fix any issues):
+   - Meeting: Create → Meet link → Start → End → Fathom → Tasks
+   - Client: Create → Pipeline → Gmail → Fetch comms → AI insights → Manual log
+   - Content: Create → Schedule → Log idea → Validate → Outline → Trends
+   - Ideas: Create → Validate → Fact-check → Approve
+   - Workspace: Folder → Page → Blocks → Search → Real-time sync
+   - Test Site: Nanobana prompt → Image → Veo prompt → Video → History
+   - Dashboard: Stats accurate from real data
+
+2. CROSS-MODULE: Tasks link back to meetings, projects link to clients, notifications work, activity feed complete
+
+3. PERFORMANCE: Pages under 3s, no leaks, APIs under 200ms
+
+4. DEPLOYMENT DOCS (README.md):
+   - Install + configure + migrate + seed + run
+   - Env vars table (all variables, required/optional, descriptions)
+   - API SETUP GUIDES:
+     a) Google Cloud: create project → enable Calendar+Gmail+Vertex AI → OAuth credentials → redirect URI
+     b) WhatsApp Business: Meta Business account → Cloud API → webhook URL → verify token
+     c) Nanobana: signup → get API key → paste in settings
+     d) Veo: already in GCP → enable API → uses same service account
+     e) Fathom: no setup (paste links manually)
+   - Deploy to GCP Cloud Run: Dockerfile → build → push → deploy → connect Cloud SQL + Redis
+   - Troubleshooting: missing vars, OAuth errors, API timeouts
+
+VERIFICATION TESTS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST 1: Full meeting flow end-to-end
+TEST 2: Full client communication flow
+TEST 3: Both users real-time sync
+TEST 4: All pages under 3 seconds
+TEST 5: Remove one API key → graceful error, rest works
+TEST 6: Notifications fire for all actions
+TEST 7: Workspace search works
+TEST 8: Data persists after server restart
+TEST 9: README is complete with API guides
+TEST 10: Missing env vars → clear errors</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Full flow: meeting → Fathom → tasks → task board (no breaks anywhere)</div>
+                    <div class="test-item">Both users synced in real-time across all modules</div>
+                    <div class="test-item">Every page loads under 3 seconds (time it)</div>
+                    <div class="test-item">README has step-by-step API setup guides for Google, WhatsApp, Nanobana, Veo</div>
+                    <div class="test-item">Remove an API key → that feature shows error, everything else works fine</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="separator">— New Feature Modules (Steps 13-18) —</div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- STEP 13: Sub-tasks + Quick Idea + Industries -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="step" data-step="13">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">13</div>
+                <div class="step-title">Sub-tasks, Quick Idea Capture & Industry Portfolios</div>
+                <span class="step-badge badge-feature">Feature</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Add sub-tasks within tasks, a floating quick-capture for ideas via AI, and an industry division system to organize products by vertical.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE: Steps 1-12 ✅ (Full app: meetings with Google Meet + Fathom, tasks kanban, CRM with Gmail/WhatsApp/AI insights, content with AI, ideas with fact-checking, workspace, dashboard, test site, real-time/notifications, settings/OAuth, UI polish, deployment docs)
+
+DO NOT modify Steps 1-12. Build ON TOP.
+
+NOW implement: Sub-tasks, Quick Idea Capture, Industry Portfolios.
+
+1. SUB-TASKS: Add sub_tasks table (id, task_id, title, status[TODO/DONE], assignee_id, order). API: POST/PATCH/DELETE /api/tasks/[id]/subtasks. Parent task progress bar (done/total). "Convert to Full Task" option. Kanban cards show "3/5" indicator.
+
+2. QUICK IDEA CAPTURE: Floating button (bottom-right, always visible). Click → minimal text input. Type → Enter → Vertex AI extracts title+category → creates Idea with status=RAW. Keyboard shortcut: Ctrl+Shift+I. Toast: "Idea captured!"
+
+3. INDUSTRY PORTFOLIOS: Table industries (id, name, icon, color). Pre-seed: Medical, Gym, Education, SaaS, E-commerce, Other. Add industry_id to clients and projects. UI /industries: grid of industry cards, click → products/clients/projects for that vertical. Filter clients/projects by industry. Dashboard widget: revenue by industry.
+
+TESTS: Subtasks show as checklist, progress bar works, quick capture creates idea with AI, industries filter correctly, Ctrl+Shift+I works globally.</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Open task → add subtasks → check them off → progress bar fills</div>
+                    <div class="test-item">Click floating button → type idea → appears in Ideas with AI categorization</div>
+                    <div class="test-item">Go to Industries → see verticals organized clearly</div>
+                    <div class="test-item">Filter clients by "Medical" → only medical clients show</div>
+                    <div class="test-item">Ctrl+Shift+I opens quick capture from any page</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 14 -->
+        <div class="step" data-step="14">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">14</div>
+                <div class="step-title">Legal Documents & Employee Management</div>
+                <span class="step-badge badge-feature">Feature</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Legal document management and employee/contractor tracking with payments.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE: Steps 1-13 ✅ (Full app + Sub-tasks, Quick Idea Capture, Industry Portfolios)
+
+DO NOT modify Steps 1-13.
+
+NOW: Legal Documents + Employee Management.
+
+1. LEGAL: Table legal_documents (id, title, type[CONTRACT/NDA/AGREEMENT/INVOICE/COMPLIANCE], file_url, client_id, project_id, status[DRAFT/ACTIVE/EXPIRED], signed_date, expiry_date, version, tags[]). Upload PDF/DOCX to GCS. Version history. Expiry alerts (30 days). Link to clients/projects. UI /legal: table, filters, PDF viewer, upload button.
+
+2. EMPLOYEES: Table employees (id, name, role, skills[], hourly_rate, status[ACTIVE/INACTIVE], contract_start, contract_end). Table employee_payments (id, employee_id, amount, hours_worked, status[PENDING/PAID], period). Link to tasks/projects. UI /employees: cards grid, detail with payment history, workload view. Dashboard widget: team overview.
+
+TESTS: Upload PDF → appears in list. Expiry alert works. Add employee → assign to project. Log payment → history updates. PDF viewer renders inline.</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Upload a contract PDF → see it in legal docs</div>
+                    <div class="test-item">Set expiry → warning appears when close</div>
+                    <div class="test-item">Add employee → see card in team grid</div>
+                    <div class="test-item">Log payment → history shows it</div>
+                    <div class="test-item">Link doc to client → findable from client page</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 15 -->
+        <div class="step" data-step="15">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">15</div>
+                <div class="step-title">Business Model Canvas & Money Management (AI-Powered)</div>
+                <span class="step-badge badge-feature">Feature</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Business model documentation and full financial management with AI insights.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE: Steps 1-14 ✅ (Full app + Sub-tasks, Quick Capture, Industries, Legal, Employees)
+
+DO NOT modify Steps 1-14.
+
+NOW: Business Model + Money Management.
+
+1. BUSINESS MODEL: Table business_models (id, product_name, industry_id, canvas_data JSON with 9 BMC blocks, architecture_notes, revenue_model, version). UI /business-model: 9-block canvas view, editable blocks, version history.
+
+2. MONEY: Table transactions (id, type[INCOME/EXPENSE], amount, category, description, client_id, project_id, industry_id, date, recurring). Table invoices (id, client_id, items JSON, total, status[DRAFT/SENT/PAID/OVERDUE], due_date). Categories: Client Payment, Product Revenue, Hosting, Tools, Contractor, Marketing, Legal, Other. AI via Vertex: spending analysis, revenue forecast, budget recommendations. UI /money: dashboard (revenue vs costs chart, profit), transactions table, invoices, "AI Analysis" button, recurring management.
+
+TESTS: Canvas editable with 9 blocks. Add income/expense → charts update. Invoice DRAFT→SENT→PAID flow. AI analysis shows insights. Revenue by industry works.</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Business Model Canvas → edit 9 blocks → saves correctly</div>
+                    <div class="test-item">Add transactions → charts update with correct numbers</div>
+                    <div class="test-item">Create invoice → mark paid → reflected in finances</div>
+                    <div class="test-item">"AI Analysis" → spending patterns and forecast appear</div>
+                    <div class="test-item">Revenue by industry matches entered data</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 16 -->
+        <div class="step" data-step="16">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">16</div>
+                <div class="step-title">Explore / Learning Hub (AI-Powered Research & Study)</div>
+                <span class="step-badge badge-integration">Integration</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Curate research and study material with AI summaries, Q&amp;A, and learning recommendations.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE: Steps 1-15 ✅ (Full app + Sub-tasks, Quick Capture, Industries, Legal, Employees, Business Model, Money Management)
+
+DO NOT modify Steps 1-15.
+
+NOW: Explore / Learning Hub.
+
+Tables: explore_resources (id, title, url, content, type[ARTICLE/PAPER/TUTORIAL/VIDEO/BOOK], topic, industry_id, ai_summary, ai_key_points JSON, tags[], is_read). explore_bookmarks (id, resource_id, user_id, highlight_text, note).
+
+AI (Vertex): Summarize (article → bullet points), Q&A (ask about resource), Recommend (suggest related), Study Plan (ordered path from selections), Auto-tag.
+
+UI /explore: resource grid, "Add Resource" (paste URL/content), detail with AI summary + Q&A chat, bookmarks, topics sidebar, "Get Recommendations", "Create Study Plan". Shared between both users.
+
+TESTS: Add resource → summarize → key points appear. Ask question → AI answers. Recommendations work. Study plan generates ordered path. Search finds content.</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Add article → "Summarize" → AI bullet points appear</div>
+                    <div class="test-item">Ask question about article → relevant answer</div>
+                    <div class="test-item">"Get Recommendations" → suggested topics appear</div>
+                    <div class="test-item">Study plan from selected resources → ordered path with time</div>
+                    <div class="test-item">Both users see shared resource library</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 17 -->
+        <div class="step" data-step="17">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">17</div>
+                <div class="step-title">API / MCP Server — Connect to Claude & AI Assistants</div>
+                <span class="step-badge badge-integration">Integration</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Expose MCP-compatible server so you can connect the ops hub to Claude Desktop for voice/chat-driven operations.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE: Steps 1-16 ✅ (Full app + all new modules including Explore/Learning Hub)
+
+DO NOT modify Steps 1-16.
+
+NOW: MCP Server / External API.
+
+1. MCP SERVER (JSON-RPC 2.0 over HTTP): Endpoint /api/mcp. Auth via X-API-Key header. Table mcp_api_keys (id, name, key_hash, permissions[], last_used_at, revoked_at).
+
+2. TOOLS: create_task, create_idea (AI categorizes), add_client_note, get_summary, log_communication, create_meeting, add_expense, add_resource, get_dashboard_stats.
+
+3. RESOURCES: ops://tasks/pending, ops://meetings/today, ops://clients/active, ops://ideas/recent, ops://money/summary.
+
+4. UI in Settings → "API Keys" section: Generate key (shows once), list active keys, revoke, Claude Desktop config example shown for easy copy.
+
+TESTS: Generate key → call tools via MCP → data appears in app. Revoke → 401. Resources return correct data. Rate limit: 100/min.</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">Generate API key in settings → key appears once</div>
+                    <div class="test-item">Call create_task via MCP → task appears in board</div>
+                    <div class="test-item">Call create_idea → AI categorizes → appears in Ideas</div>
+                    <div class="test-item">Revoke key → calls fail with 401</div>
+                    <div class="test-item">Claude Desktop config example shown for easy setup</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 18 -->
+        <div class="step" data-step="18">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">18</div>
+                <div class="step-title">WhatsApp Simplification & Final Cross-Module Integration</div>
+                <span class="step-badge badge-checkpoint">Checkpoint</span>
+                <span class="step-toggle">▶</span>
+            </div>
+            <div class="step-content">
+                <p class="step-desc">Simplify WhatsApp connection (QR code option), wire all new modules together, update sidebar/dashboard/notifications.</p>
+                <div class="prompt-block">
+                    <div class="prompt-label">
+                        <span>Antigravity Prompt</span>
+                        <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                    </div>
+                    <div class="prompt-code">ALREADY DONE: Steps 1-17 ✅ (Full app + all modules + MCP Server)
+
+DO NOT rebuild. Fix, integrate, polish.
+
+1. WHATSAPP SIMPLIFICATION:
+   - Add QR Code option (whatsapp-web.js library): Settings shows QR → scan with phone → connected (read-only)
+   - Keep Business API as "Advanced" option for full send+receive
+   - Guided wizard: numbered steps with clear descriptions
+   - "Test Connection" button with clear status: 🟢 Connected / 🔴 Disconnected
+   - Show pros/cons of each option clearly
+
+2. CROSS-MODULE WIRING:
+   - Sidebar: add Industries, Legal, Employees, Business Model, Money, Explore
+   - Dashboard: financial widget, team widget, expiring docs alert, quick capture accessible
+   - Notifications for new modules (doc expiring, payment due, resource added)
+   - Money ↔ Clients (revenue), Employees (payments), Projects (budgets)
+   - Legal ↔ Clients (contracts), Employees (agreements)
+   - Industry tags on: client cards, projects, business models, money charts
+   - MCP tools cover all modules
+
+3. FINAL VALIDATION: All 18+ sidebar items load. Dashboard shows all data. Notifications for everything. Performance still under 3s.
+
+TESTS: WhatsApp QR option visible. All sidebar items work. Dashboard has all widgets. Cross-links work (expense → money + industry). No regressions.</div>
+                </div>
+                <div class="tests-block">
+                    <div class="tests-label">Physical Tester Checks</div>
+                    <div class="test-item">WhatsApp shows QR code option (simpler than API keys)</div>
+                    <div class="test-item">Click every sidebar item → all load (no 404s or blanks)</div>
+                    <div class="test-item">Dashboard shows data from ALL modules</div>
+                    <div class="test-item">Add expense → shows in money AND industry breakdown</div>
+                    <div class="test-item">App still feels fast and premium (no regression)</div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- API SETUP GUIDES -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="api-guide">
+            <h2>🔗 API Integration Setup Guides</h2>
+            <p>Follow these guides to connect all external services. Complete these BEFORE running the app.</p>
+
+            <h3>1. Google Cloud Platform (Meet, Gmail, Vertex AI)</h3>
+            <ul>
+                <li>Go to <code>console.cloud.google.com</code> → Create a new project (or use existing)</li>
+                <li>Enable APIs: Google Calendar API, Gmail API, Vertex AI API</li>
+                <li>Go to "APIs & Services" → "Credentials" → Create OAuth 2.0 Client ID</li>
+                <li>Application type: Web application</li>
+                <li>Authorized redirect URIs: <code>http://localhost:3000/api/auth/google/callback</code> (dev) and your production URL</li>
+                <li>Copy Client ID → <code>GOOGLE_CLIENT_ID</code> in .env</li>
+                <li>Copy Client Secret → <code>GOOGLE_CLIENT_SECRET</code> in .env</li>
+                <li>Set <code>GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback</code></li>
+                <li>For Vertex AI: <code>GCP_PROJECT_ID=your-project-id</code>, <code>GCP_LOCATION=us-central1</code></li>
+                <li>Ensure the service account has "Vertex AI User" role</li>
+                <li>OAuth consent screen: Add scopes <code>calendar.events</code> and <code>gmail.readonly</code></li>
+            </ul>
+
+            <h3>2. WhatsApp Business API (Meta Cloud API)</h3>
+            <ul>
+                <li>Go to <code>developers.facebook.com</code> → Create a Meta Business App</li>
+                <li>Add "WhatsApp" product to your app</li>
+                <li>Go to WhatsApp → "API Setup" → Get temporary access token (for dev)</li>
+                <li>For production: Create a System User → Generate permanent token</li>
+                <li>Note your Phone Number ID from the dashboard</li>
+                <li>Set in .env: <code>WHATSAPP_API_TOKEN=your_token</code>, <code>WHATSAPP_PHONE_NUMBER_ID=your_phone_id</code></li>
+                <li>Configure webhook URL: <code>https://your-domain.com/api/webhooks/whatsapp</code></li>
+                <li>Webhook verify token: any string you choose (store in env)</li>
+                <li>Subscribe to: messages, message_deliveries</li>
+            </ul>
+
+            <h3>3. Nanobana API (Image Generation)</h3>
+            <ul>
+                <li>Sign up at the Nanobana platform</li>
+                <li>Navigate to API section → Generate API key</li>
+                <li>Set in .env: <code>NANOBANA_API_KEY=your_api_key</code></li>
+                <li>Test via Settings → Integrations → "Test Connection" button</li>
+                <li>Rate limits: Check your plan tier for requests per minute</li>
+                <li>Supported parameters: style, resolution, aspect ratio (check their docs)</li>
+            </ul>
+
+            <h3>4. Veo API (Video Generation)</h3>
+            <ul>
+                <li>Veo uses the same GCP project as Vertex AI</li>
+                <li>Ensure "Vertex AI API" is enabled (covers Veo access)</li>
+                <li>Your GCP service account needs "Vertex AI User" role (same as step 1)</li>
+                <li>Set <code>VEO_API_KEY</code> in .env OR it uses default GCP credentials</li>
+                <li>Video generation takes 30-120 seconds — the app handles this async</li>
+                <li>Output stored in GCS bucket (configure <code>GCS_BUCKET_NAME</code> if needed)</li>
+            </ul>
+
+            <h3>5. Fathom AI (Meeting Recording)</h3>
+            <ul>
+                <li>No API setup needed — Fathom uses shared links</li>
+                <li>After each meeting, Fathom provides a share link like: <code>https://fathom.video/share/abc123</code></li>
+                <li>Users paste this link in the meeting detail page</li>
+                <li>The summary and transcript are entered manually from the Fathom shared page</li>
+                <li>Ensure team members have Fathom installed and meetings are being recorded</li>
+            </ul>
+
+            <h3>6. Database (PostgreSQL)</h3>
+            <ul>
+                <li>Local dev: Install PostgreSQL or use Docker: <code>docker run -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres</code></li>
+                <li>Create database: <code>createdb isocodelabs_ops</code></li>
+                <li>Set <code>DATABASE_URL=postgresql://user:password@localhost:5432/isocodelabs_ops</code></li>
+                <li>Production (GCP): Use Cloud SQL for PostgreSQL — create instance, get connection string</li>
+                <li>Run migrations: <code>npx prisma migrate deploy</code></li>
+                <li>Seed data: <code>npx prisma db seed</code></li>
+            </ul>
+
+            <h3>7. Redis (Caching + Real-time Pub/Sub)</h3>
+            <ul>
+                <li>Local dev: Install Redis or Docker: <code>docker run -p 6379:6379 redis</code></li>
+                <li>Set <code>REDIS_URL=redis://localhost:6379</code></li>
+                <li>Production (GCP): Use Memorystore for Redis</li>
+                <li>Used for: session cache, dashboard metrics cache (5-min TTL), WebSocket pub/sub</li>
+            </ul>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- QUICK REFERENCE: Environment Variables -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="api-guide" style="margin-top: 24px;">
+            <h2>📋 Environment Variables Quick Reference</h2>
+            <div class="prompt-block">
+                <div class="prompt-label">
+                    <span>.env.example</span>
+                    <button class="copy-btn" onclick="copyPrompt(this)">Copy</button>
+                </div>
+                <div class="prompt-code"># ═══════════════════════════════════════════
+# Isocodelabs Ops Hub — Environment Variables
+# ═══════════════════════════════════════════
+
+# DATABASE (Required)
+DATABASE_URL=postgresql://user:password@localhost:5432/isocodelabs_ops
+
+# AUTH (Required)
+JWT_SECRET=your-super-secret-jwt-key-min-32-chars
+
+# GOOGLE OAUTH (Required for Meet + Gmail)
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
+
+# GCP / VERTEX AI (Required for AI features)
+GCP_PROJECT_ID=your-gcp-project-id
+GCP_LOCATION=us-central1
+
+# WHATSAPP BUSINESS (Optional — for client comm tracking)
+WHATSAPP_API_TOKEN=your-whatsapp-api-token
+WHATSAPP_PHONE_NUMBER_ID=your-phone-number-id
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=your-webhook-verify-string
+
+# NANOBANA (Optional — for Test Site image generation)
+NANOBANA_API_KEY=your-nanobana-api-key
+
+# VEO (Optional — for Test Site video generation, uses GCP creds if blank)
+VEO_API_KEY=
+
+# REDIS (Optional — for caching, defaults to in-memory if not set)
+REDIS_URL=redis://localhost:6379
+
+# APP CONFIG
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_SOCKET_URL=http://localhost:3000
+
+# STORAGE (Optional — for file uploads)
+GCS_BUCKET_NAME=isocodelabs-ops-uploads</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- JAVASCRIPT -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <script>
+        function toggleStep(header) {
+            const step = header.closest('.step');
+            step.classList.toggle('open');
+        }
+
+        function copyPrompt(btn) {
+            const code = btn.closest('.prompt-block').querySelector('.prompt-code');
+            navigator.clipboard.writeText(code.textContent).then(() => {
+                btn.textContent = 'Copied!';
+                btn.style.background = '#166534';
+                btn.style.borderColor = '#4ade80';
+                btn.style.color = '#4ade80';
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.style.background = '';
+                    btn.style.borderColor = '';
+                    btn.style.color = '';
+                }, 2000);
+            });
+        }
+
+        // ═══ ISSUES / NOTES SYSTEM ═══
+        function getIssues() {
+            return JSON.parse(localStorage.getItem('opsHubIssues') || '{}');
+        }
+
+        function saveIssues(issues) {
+            localStorage.setItem('opsHubIssues', JSON.stringify(issues));
+        }
+
+        function addIssue(stepNum) {
+            const input = document.querySelector(`#issue-input-${stepNum}`);
+            const text = input.value.trim();
+            if (!text) return;
+
+            const issues = getIssues();
+            if (!issues[stepNum]) issues[stepNum] = [];
+            issues[stepNum].push({ text, resolved: false, id: Date.now() });
+            saveIssues(issues);
+            input.value = '';
+            renderIssues(stepNum);
+            updateIssueBadges();
+        }
+
+        function toggleIssue(stepNum, issueId) {
+            const issues = getIssues();
+            const issue = issues[stepNum]?.find(i => i.id === issueId);
+            if (issue) {
+                issue.resolved = !issue.resolved;
+                saveIssues(issues);
+                renderIssues(stepNum);
+                updateIssueBadges();
+            }
+        }
+
+        function deleteIssue(stepNum, issueId) {
+            const issues = getIssues();
+            issues[stepNum] = issues[stepNum]?.filter(i => i.id !== issueId) || [];
+            saveIssues(issues);
+            renderIssues(stepNum);
+            updateIssueBadges();
+        }
+
+        function renderIssues(stepNum) {
+            const container = document.querySelector(`#issues-list-${stepNum}`);
+            if (!container) return;
+            const issues = getIssues();
+            const stepIssues = issues[stepNum] || [];
+
+            container.innerHTML = stepIssues.map(issue => `
+                <li class="issue-item ${issue.resolved ? 'resolved' : ''}">
+                    <input type="checkbox" ${issue.resolved ? 'checked' : ''} 
+                           onchange="toggleIssue('${stepNum}', ${issue.id})" />
+                    <label onclick="toggleIssue('${stepNum}', ${issue.id})">${issue.text}</label>
+                    <button class="add-issue-btn" onclick="deleteIssue('${stepNum}', ${issue.id})" style="padding:2px 6px;font-size:0.7rem;color:#f87171;">✕</button>
+                </li>
+            `).join('');
+        }
+
+        function updateIssueBadges() {
+            const issues = getIssues();
+            document.querySelectorAll('.step[data-step]').forEach(step => {
+                const stepNum = step.dataset.step;
+                const stepIssues = issues[stepNum] || [];
+                const badge = step.querySelector('.issue-count-badge');
+                if (badge) {
+                    const unresolved = stepIssues.filter(i => !i.resolved).length;
+                    const total = stepIssues.length;
+                    if (total === 0) {
+                        badge.style.display = 'none';
+                    } else {
+                        badge.style.display = 'inline';
+                        badge.textContent = unresolved === 0 ? `✓ ${total} fixed` : `${unresolved} issue${unresolved > 1 ? 's' : ''}`;
+                        badge.className = unresolved === 0 ? 'issue-count-badge all-resolved' : 'issue-count-badge';
+                    }
+                }
+            });
+        }
+
+        // Inject issues section into each step
+        function injectIssuesSections() {
+            document.querySelectorAll('.step[data-step]').forEach(step => {
+                const stepNum = step.dataset.step;
+                const content = step.querySelector('.step-content');
+                if (!content || content.querySelector('.step-issues')) return;
+
+                // Add badge to header
+                const header = step.querySelector('.step-header');
+                const badge = document.createElement('span');
+                badge.className = 'issue-count-badge';
+                badge.style.display = 'none';
+                header.querySelector('.step-toggle').before(badge);
+
+                // Add issues panel
+                const issuesDiv = document.createElement('div');
+                issuesDiv.className = 'step-issues';
+                issuesDiv.innerHTML = `
+                    <div class="step-issues-header">
+                        <span>🐛 Issues / Notes to Fix Later</span>
+                    </div>
+                    <ul class="issue-list" id="issues-list-${stepNum}"></ul>
+                    <div class="add-issue-row">
+                        <input class="add-issue-input" id="issue-input-${stepNum}" 
+                               placeholder="Note an issue to fix later..." 
+                               onkeydown="if(event.key==='Enter')addIssue('${stepNum}')" />
+                        <button class="add-issue-btn" onclick="addIssue('${stepNum}')">+ Add</button>
+                    </div>
+                `;
+                content.appendChild(issuesDiv);
+                renderIssues(stepNum);
+            });
+            updateIssueBadges();
+        }
+
+        // ═══ PROGRESS TRACKING ═══
+        function updateProgress() {
+            const steps = document.querySelectorAll('.step[data-step]');
+            let completed = 0;
+            steps.forEach(step => {
+                if (step.classList.contains('completed')) completed++;
+            });
+            document.getElementById('completedCount').textContent = completed;
+            const total = steps.length;
+            const pct = (completed / total) * 100;
+            document.getElementById('progressFill').style.width = pct + '%';
+            localStorage.setItem('opsHubProgress', JSON.stringify(
+                Array.from(steps).filter(s => s.classList.contains('completed')).map(s => s.dataset.step)
+            ));
+        }
+
+        function loadProgress() {
+            const saved = JSON.parse(localStorage.getItem('opsHubProgress') || '[]');
+            saved.forEach(stepNum => {
+                const step = document.querySelector(`.step[data-step="${stepNum}"]`);
+                if (step) step.classList.add('completed');
+            });
+            updateProgress();
+        }
+
+        // Double-click step number to mark complete
+        document.querySelectorAll('.step[data-step] .step-number').forEach(num => {
+            num.style.cursor = 'pointer';
+            num.title = 'Double-click to mark complete';
+            num.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                const step = num.closest('.step');
+                step.classList.toggle('completed');
+                updateProgress();
+            });
+        });
+
+        // Initialize
+        loadProgress();
+        injectIssuesSections();
+    </script>
+</body>
+</html>

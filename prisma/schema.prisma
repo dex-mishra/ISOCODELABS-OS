@@ -1,0 +1,696 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                 String             @id @default(uuid())
+  email              String             @unique
+  name               String
+  password_hash      String
+  avatar_url         String?
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @updatedAt
+  
+  // Relations
+  meeting_attendees  MeetingAttendee[]
+  created_meetings   Meeting[]          @relation("CreatedMeetings")
+  assigned_tasks     Task[]             @relation("AssignedTasks")
+  created_tasks      Task[]             @relation("CreatedTasks")
+  assigned_subtasks  SubTask[]          @relation("AssignedSubTasks")
+  created_clients    Client[]           @relation("CreatedClients")
+  created_projects   Project[]          @relation("CreatedProjects")
+  created_content    ContentItem[]      @relation("CreatedContent")
+  created_ideas      Idea[]             @relation("CreatedIdeas")
+  created_content_ideas ContentIdea[]   @relation("CreatedContentIdeas")
+  edited_pages       WorkspacePage[]    @relation("EditedPages")
+  created_pages      WorkspacePage[]    @relation("CreatedPages")
+  created_test_results TestResult[]     @relation("CreatedTestResults")
+  notifications      Notification[]
+  bookmarks          ExploreBookmark[]
+  created_keys       McpApiKey[]        @relation("CreatedKeys")
+  created_interactions Interaction[]    @relation("CreatedInteractions")
+}
+
+model Meeting {
+  id                        String             @id @default(uuid())
+  title                     String
+  description               String?
+  agenda                    String?
+  notes                     String?
+  scheduled_at              DateTime
+  duration                  Int                // in minutes
+  status                    MeetingStatus      @default(SCHEDULED)
+  google_meet_link          String?
+  google_calendar_event_id  String?
+  meeting_started_at        DateTime?
+  meeting_ended_at          DateTime?
+  fathom_link               String?
+  fathom_summary            String?
+  fathom_transcript         String?
+  fathom_imported_at        DateTime?
+  created_by                String
+  creator                   User               @relation("CreatedMeetings", fields: [created_by], references: [id])
+  created_at                DateTime           @default(now())
+  updated_at                DateTime           @updatedAt
+  
+  // Relations
+  attendees                 MeetingAttendee[]
+  tasks                     Task[]
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model MeetingAttendee {
+  meeting_id String
+  user_id    String
+  meeting    Meeting @relation(fields: [meeting_id], references: [id], onDelete: Cascade)
+  user       User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  @@id([meeting_id, user_id])
+}
+
+model Task {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  status      TaskStatus  @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  assignee_id String?
+  assignee    User?       @relation("AssignedTasks", fields: [assignee_id], references: [id])
+  due_date    DateTime?
+  meeting_id  String?
+  meeting     Meeting?    @relation(fields: [meeting_id], references: [id])
+  project_id  String?
+  project     Project?    @relation(fields: [project_id], references: [id])
+  tags        String[]
+  created_by  String
+  creator     User        @relation("CreatedTasks", fields: [created_by], references: [id])
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+  
+  comments    Json?       @default("[]")
+  activities  Json?       @default("[]")
+  
+  // Relations
+  sub_tasks   SubTask[]
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model SubTask {
+  id           String   @id @default(uuid())
+  task_id      String
+  task         Task     @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  title        String
+  is_completed Boolean  @default(false)
+  assignee_id  String?
+  assignee     User?    @relation("AssignedSubTasks", fields: [assignee_id], references: [id])
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+}
+
+model Client {
+  id                      String        @id @default(uuid())
+  name                    String
+  email                   String
+  phone                   String?
+  company                 String?
+  pipeline_stage          PipelineStage @default(LEAD)
+  notes                   String?
+  source                  String?
+  value                   Float?
+  connected_gmail         Boolean       @default(false)
+  connected_whatsapp      Boolean       @default(false)
+  last_communication_at   DateTime?
+  total_emails            Int           @default(0)
+  total_whatsapp_messages Int           @default(0)
+  created_by              String
+  creator                 User          @relation("CreatedClients", fields: [created_by], references: [id])
+  created_at              DateTime      @default(now())
+  updated_at              DateTime      @updatedAt
+  
+  // Relations
+  interactions            Interaction[]
+  communication_logs      CommunicationLog[]
+  client_insights         ClientInsight[]
+  projects                Project[]
+  transactions            Transaction[]
+  invoices                Invoice[]
+}
+
+enum PipelineStage {
+  LEAD
+  CONTACTED
+  PROPOSAL
+  NEGOTIATION
+  ACTIVE
+  CHURNED
+}
+
+model Interaction {
+  id         String          @id @default(uuid())
+  client_id  String
+  client     Client          @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  type       InteractionType @default(NOTE)
+  summary    String
+  details    String?
+  date       DateTime        @default(now())
+  created_by String
+  creator    User            @relation("CreatedInteractions", fields: [created_by], references: [id])
+  created_at DateTime        @default(now())
+}
+
+enum InteractionType {
+  EMAIL
+  CALL
+  MEETING
+  NOTE
+  OTHER
+}
+
+model CommunicationLog {
+  id                        String                 @id @default(uuid())
+  client_id                 String
+  client                    Client                 @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  source                    CommsSource
+  direction                 CommsDirection
+  subject                   String?
+  body                      String
+  sender_email              String?
+  sender_phone              String?
+  received_at               DateTime
+  thread_id                 String?
+  message_id                String                 @unique
+  attachments               String[]
+  sentiment                 SentimentType          @default(NEUTRAL)
+  flagged_as_change_request Boolean                @default(false)
+  action_items              String[]
+  created_at                DateTime               @default(now())
+}
+
+enum CommsSource {
+  GMAIL
+  WHATSAPP
+  MANUAL
+}
+
+enum CommsDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum SentimentType {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+model ClientInsight {
+  id                   String             @id @default(uuid())
+  client_id            String
+  client               Client             @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  type                 InsightType
+  timeframe_start      DateTime
+  timeframe_end        DateTime
+  summary              String
+  key_topics           String[]
+  sentiment_overview   SentimentType      @default(NEUTRAL)
+  email_count          Int                @default(0)
+  whatsapp_count       Int                @default(0)
+  manual_log_count     Int                @default(0)
+  action_items         String[]
+  change_requests      String[]
+  generated_by         String
+  created_at           DateTime           @default(now())
+}
+
+enum InsightType {
+  DAILY_DIGEST
+  WEEKLY_DIGEST
+  COMMUNICATION_SUMMARY
+  CHANGE_REQUEST_FLAG
+  ACTION_ITEMS
+}
+
+model Project {
+  id           String        @id @default(uuid())
+  name         String
+  description  String?
+  client_id    String
+  client       Client        @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  status       ProjectStatus @default(PLANNING)
+  start_date   DateTime?
+  end_date     DateTime?
+  budget       Float?
+  created_by   String
+  creator      User          @relation("CreatedProjects", fields: [created_by], references: [id])
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  
+  // Relations
+  milestones   Milestone[]
+  tasks        Task[]
+  transactions Transaction[]
+  invoices     Invoice[]
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+model Milestone {
+  id          String          @id @default(uuid())
+  project_id  String
+  project     Project         @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  due_date    DateTime?
+  status      MilestoneStatus @default(PENDING)
+  created_at  DateTime        @default(now())
+  updated_at  DateTime        @updatedAt
+}
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Industry {
+  id         String            @id @default(uuid())
+  name       String            @unique
+  created_at DateTime          @default(now())
+  updated_at DateTime          @updatedAt
+  
+  // Relations
+  products   IndustryProduct[]
+}
+
+model IndustryProduct {
+  id             String          @id @default(uuid())
+  industry_id    String
+  industry       Industry        @relation(fields: [industry_id], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
+  
+  // Relations
+  content_items  ContentItem[]
+  business_models BusinessModel[]
+}
+
+model ContentItem {
+  id           String        @id @default(uuid())
+  title        String
+  body         String?
+  type         ContentType
+  status       ContentStatus @default(IDEA)
+  product_id   String?
+  product      IndustryProduct? @relation(fields: [product_id], references: [id])
+  publish_date DateTime?
+  platforms    String[]
+  tags         String[]
+  created_by   String
+  creator      User          @relation("CreatedContent", fields: [created_by], references: [id])
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+}
+
+enum ContentType {
+  BLOG_POST
+  SOCIAL_MEDIA
+  VIDEO
+  NEWSLETTER
+  OTHER
+}
+
+enum ContentStatus {
+  IDEA
+  DRAFT
+  IN_REVIEW
+  SCHEDULED
+  PUBLISHED
+}
+
+model ContentIdea {
+  id               String               @id @default(uuid())
+  title            String
+  description      String?
+  content_type     ContentType
+  target_audience  String?
+  status           ContentIdeaStatus    @default(RAW)
+  tags             String[]
+  created_by       String
+  creator          User                 @relation("CreatedContentIdeas", fields: [created_by], references: [id])
+  created_at       DateTime             @default(now())
+  updated_at       DateTime             @updatedAt
+  
+  // Relations
+  validations      ContentIdeaValidation[]
+  outlines         ContentOutline[]
+}
+
+enum ContentIdeaStatus {
+  RAW
+  VALIDATING
+  VALIDATED
+  OUTLINED
+  IN_DEVELOPMENT
+  REJECTED
+}
+
+model ContentIdeaValidation {
+  id                String      @id @default(uuid())
+  idea_id           String
+  idea              ContentIdea @relation(fields: [idea_id], references: [id], onDelete: Cascade)
+  feasibility_score Float
+  audience_fit_score Float
+  originality_score Float
+  overall_score     Float
+  strengths         String[]
+  weaknesses        String[]
+  recommendations   String[]
+  generated_by      String
+  created_at        DateTime    @default(now())
+}
+
+model ContentOutline {
+  id                   String      @id @default(uuid())
+  idea_id              String
+  idea                 ContentIdea @relation(fields: [idea_id], references: [id], onDelete: Cascade)
+  sections             Json
+  estimated_word_count Int
+  estimated_read_time  Int
+  generated_by         String
+  created_at           DateTime    @default(now())
+}
+
+model Idea {
+  id          String        @id @default(uuid())
+  title       String
+  description String?
+  category    IdeaCategory  @default(PRODUCT)
+  status      IdeaStatus    @default(RAW)
+  impact      Int
+  effort      Int
+  tags        String[]
+  is_deleted  Boolean       @default(false)
+  created_by  String
+  creator     User          @relation("CreatedIdeas", fields: [created_by], references: [id])
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+  
+  // Relations
+  validations AiValidation[]
+}
+
+enum IdeaCategory {
+  PRODUCT
+  FEATURE
+  CONTENT
+  BUSINESS
+  OTHER
+}
+
+enum IdeaStatus {
+  RAW
+  VALIDATED
+  APPROVED
+  REJECTED
+  IMPLEMENTED
+}
+
+model AiValidation {
+  id         String   @id @default(uuid())
+  idea_id    String
+  idea       Idea     @relation(fields: [idea_id], references: [id], onDelete: Cascade)
+  type       String
+  prompt     String
+  response   String
+  confidence Float
+  claims     Json
+  created_at DateTime @default(now())
+}
+
+model WorkspaceFolder {
+  id         String            @id @default(uuid())
+  name       String
+  parent_id  String?
+  parent     WorkspaceFolder?  @relation("FolderHierarchy", fields: [parent_id], references: [id], onDelete: Cascade)
+  children   WorkspaceFolder[] @relation("FolderHierarchy")
+  icon       String?
+  created_at DateTime          @default(now())
+  updated_at DateTime          @updatedAt
+  
+  // Relations
+  pages      WorkspacePage[]
+}
+
+model WorkspacePage {
+  id             String           @id @default(uuid())
+  title          String
+  content        Json
+  folder_id      String?
+  folder         WorkspaceFolder? @relation(fields: [folder_id], references: [id], onDelete: Cascade)
+  icon           String?
+  cover_image    String?
+  last_edited_by String
+  editor         User             @relation("EditedPages", fields: [last_edited_by], references: [id])
+  created_by     String
+  creator        User             @relation("CreatedPages", fields: [created_by], references: [id])
+  is_deleted     Boolean          @default(false)
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @updatedAt
+}
+
+model TestResult {
+  id              String        @id @default(uuid())
+  provider        GenProvider
+  prompt          String
+  parameters      Json
+  status          GenStatus     @default(PENDING)
+  output_type     GenOutputType
+  output_url      String?
+  output_metadata Json?
+  error_message   String?
+  processing_time Int?
+  created_by      String
+  creator         User          @relation("CreatedTestResults", fields: [created_by], references: [id])
+  created_at      DateTime      @default(now())
+  completed_at    DateTime?
+}
+
+enum GenProvider {
+  NANOBANA
+  VEO
+}
+
+enum GenStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum GenOutputType {
+  IMAGE
+  VIDEO
+}
+
+model Setting {
+  id         String   @id @default(uuid())
+  key        String   @unique
+  value      String
+  category   String
+  updated_at DateTime @updatedAt
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  title      String
+  body       String
+  type       String
+  is_read    Boolean  @default(false)
+  link       String?
+  created_at DateTime @default(now())
+}
+
+model McpApiKey {
+  id         String   @id @default(uuid())
+  name       String
+  key_hash   String   @unique
+  is_active  Boolean  @default(true)
+  created_by String
+  creator    User     @relation("CreatedKeys", fields: [created_by], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Employee {
+  id                   String            @id @default(uuid())
+  name                 String
+  role                 String
+  email                String            @unique
+  phone                String?
+  skills               String[]
+  hourly_rate          Float
+  availability         String?
+  workload             String?
+  contract_details     String?
+  contract_expiry_date DateTime?
+  created_at           DateTime          @default(now())
+  updated_at           DateTime          @updatedAt
+  
+  // Relations
+  payments             EmployeePayment[]
+}
+
+model EmployeePayment {
+  id             String        @id @default(uuid())
+  employee_id    String
+  employee       Employee      @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  hours_worked   Float
+  payment_amount Float
+  status         PaymentStatus @default(PENDING)
+  payment_date   DateTime?
+  notes          String?
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
+model BusinessModel {
+  id                 String          @id @default(uuid())
+  product_id         String
+  product            IndustryProduct @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  canvas_data        Json
+  architecture_links Json
+  value_propositions String?
+  created_at         DateTime        @default(now())
+  updated_at         DateTime        @updatedAt
+}
+
+model Transaction {
+  id               String      @id @default(uuid())
+  project_id       String?
+  project          Project?    @relation(fields: [project_id], references: [id])
+  client_id        String?
+  client           Client?     @relation(fields: [client_id], references: [id])
+  amount           Float
+  type             TxType
+  category         String
+  transaction_date DateTime
+  notes            String?
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
+}
+
+enum TxType {
+  INCOME
+  EXPENSE
+}
+
+model Invoice {
+  id             String        @id @default(uuid())
+  project_id     String?
+  project        Project?      @relation(fields: [project_id], references: [id])
+  client_id      String?
+  client         Client?       @relation(fields: [client_id], references: [id])
+  invoice_number String        @unique
+  amount         Float
+  status         InvoiceStatus @default(SENT)
+  issue_date     DateTime
+  due_date       DateTime
+  file_url       String?
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+}
+
+enum InvoiceStatus {
+  SENT
+  PAID
+  OVERDUE
+}
+
+model ExploreResource {
+  id          String            @id @default(uuid())
+  title       String
+  url         String?
+  summary     String?
+  key_points  String[]
+  content     String?
+  topic       String?
+  industry    String?
+  skill       String?
+  created_at  DateTime          @default(now())
+  updated_at  DateTime          @updatedAt
+  
+  // Relations
+  bookmarks   ExploreBookmark[]
+}
+
+model ExploreBookmark {
+  id          String          @id @default(uuid())
+  user_id     String
+  user        User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  resource_id String
+  resource    ExploreResource @relation(fields: [resource_id], references: [id], onDelete: Cascade)
+  notes       String?
+  created_at  DateTime        @default(now())
+}
+
+model DashboardAccount {
+  id             String    @id @default(uuid())
+  name           String
+  provider       String
+  metrics        Json
+  last_synced_at DateTime  @default(now())
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+}
+
+model ChatMessage {
+  id           String      @id @default(uuid())
+  context_type String      // "IDEA" or "CONTENT"
+  context_id   String?     // Nullable for draft discussions
+  role         String      // "USER" or "AI"
+  content      String
+  model_used   String
+  images       String[]
+  created_at   DateTime    @default(now())
+
+  @@map("chat_messages")
+}

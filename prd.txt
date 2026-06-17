@@ -1,0 +1,362 @@
+===============================================================================
+PRODUCT REQUIREMENTS DOCUMENT (PRD)
+Isocodelabs Operations Management Web App
+===============================================================================
+
+1. PRODUCT OVERVIEW
+-------------------------------------------------------------------------------
+Product Name: Isocodelabs Ops Hub
+Team: 2 users (founders)
+Type: Internal operations management web application
+Vision: A shared, premium workspace (Notion-like) that consolidates all daily
+        operations for Isocodelabs' multiple digital products into one place.
+Design Language: Apple.com-inspired — clean, minimal, elegant, premium UI/UX.
+
+2. PROBLEM STATEMENT
+-------------------------------------------------------------------------------
+Isocodelabs runs multiple digital products and currently lacks a unified
+platform to manage meetings, tasks, client relationships, content pipelines,
+product ideas, and analytics. Information is scattered across tools, making
+coordination between the two founders inefficient.
+
+3. TARGET USERS
+-------------------------------------------------------------------------------
+- Primary: The two Isocodelabs founders (internal use only)
+- No external users or public access required
+- Both users have admin-level access
+
+4. CORE MODULES
+-------------------------------------------------------------------------------
+
+4.1 MEETINGS
+- Schedule meetings with agenda, time, and duration
+- Document meeting notes with rich text
+- Google Meet Integration:
+  - Start Google Meet calls directly from the meeting interface
+  - Auto-generate Meet links on meeting creation via Google Calendar API
+  - One-click "Start Meeting" button opens Google Meet
+  - Track meeting start/end times for duration logging
+- Fathom AI Integration:
+  - Paste Fathom link after each meeting (recording + AI summary + transcript)
+  - Import and store Fathom-generated summary points
+  - Import and store full meeting transcript
+  - Link to Fathom recording for playback
+  - Manual notes coexist alongside Fathom AI notes
+- Create and assign tasks directly from meeting outcomes
+- Track meeting history and status
+
+4.2 TASK MANAGEMENT
+- Create tasks with title, description, priority, and due date
+- Assign tasks to either team member
+- Status workflow: TODO → IN PROGRESS → IN REVIEW → DONE
+- Sub-tasks: ability to create steps/sub-tasks within a parent task
+  - Each sub-task has title, status (done/not done), assignee
+  - Parent task progress bar based on sub-task completion
+  - Can convert sub-tasks to full tasks if they grow in scope
+- Link tasks to meetings and projects
+- Filter/sort by priority, assignee, status, project
+
+4.3 CLIENT PROJECTS
+- Track projects from planning through completion
+- Manage milestones and deliverables
+- Link tasks to projects
+- Timeline visualization
+
+4.4 CLIENT MANAGEMENT & ACQUISITION (CRM)
+- Store client contact details and company info
+- Pipeline stages: LEAD → CONTACTED → PROPOSAL → NEGOTIATION → ACTIVE → CHURNED
+- Log all client interactions (emails, calls, meetings, notes)
+- Track client acquisition source and value
+- Communication Tracking:
+  - Connect Gmail accounts to track email exchanges with clients
+  - Connect WhatsApp Business to track message threads
+  - "Latest Update" button: fetch comms for selected timeframe per client
+  - AI-powered insights (Vertex AI): summarize comms, flag change requests,
+    extract action items, sentiment analysis
+  - Daily/weekly digest: email count, key topics, sentiment overview
+  - Manual log entries: both users can add notes about conversations,
+    phone calls, requirements, and decisions
+  - Unified timeline per client combining automated + manual logs
+  - Track requirement changes mentioned in communications
+
+4.5 CONTENT MANAGEMENT
+- Plan content across all digital products
+- Content types: blog posts, social media, videos, newsletters
+- Status flow: IDEA → DRAFT → IN REVIEW → SCHEDULED → PUBLISHED
+- Content calendar view
+- Schedule publication dates
+- AI CHAT PANEL (same as Ideas module):
+  - Right sidebar chat with Gemini Pro / Vertex AI
+  - Discuss content ideas, angles, scripts, outlines
+  - AI helps write scripts, refine copy, suggest hooks
+  - "Log as Content" button → saves from chat into content pipeline
+  - Model selector (Gemini Pro, Flash, etc.)
+  - Attach images from Nanobana for visual content planning
+- Content Ideas with AI:
+  - Log content ideas directly within content module
+  - Conversational AI for brainstorming and developing ideas
+  - Generate outlines and full scripts via chat
+  - Trend validation against current market data
+  - Status flow: RAW → VALIDATING → VALIDATED → OUTLINED → IN DEVELOPMENT → REJECTED
+
+4.6 IDEAS MANAGEMENT (AI-POWERED)
+- Capture product/feature ideas with description and context
+- AI CHAT PANEL (right sidebar or Ctrl+I popup):
+  - Conversational interface to discuss ideas with AI (Gemini Pro via Vertex AI)
+  - Model selector: choose between Gemini Pro, Gemini Flash, etc.
+  - Discuss feasibility, market fit, competitors, technical approach
+  - AI provides base reality checks through conversation
+  - Once discussion is complete → "Log This Idea" button saves the idea with conversation context
+  - Conversation history preserved per idea
+  - Attach Nanobana-generated images to ideas for visual reference
+- Idea detail view:
+  - Title, description, category, status
+  - Attached images (from Nanobana/Test Site or uploaded)
+  - Full AI conversation history
+  - Can resume conversation anytime
+- Confidence scoring based on AI discussion
+- Categorize: PRODUCT, FEATURE, CONTENT, BUSINESS, OTHER
+- Status flow: RAW → VALIDATED → APPROVED → REJECTED → IMPLEMENTED
+- Keyboard shortcut: Ctrl+I opens AI chat from anywhere
+
+4.7 DASHBOARD & ANALYTICS
+- Unified dashboard showing key metrics
+- Track social media accounts (followers, engagement)
+- Website analytics for specific sites (traffic, conversions)
+- Support multiple tracked accounts/sites
+- Auto-refresh with caching (5-min TTL)
+
+4.8 SHARED WORKSPACE
+- Collaborative pages organized in folders
+- Real-time editing (both users see changes live)
+- Block-based editor (text, headings, lists, code, images, tables)
+- Search across all workspace content
+- Folder nesting up to 5 levels
+- Page history and revisions
+
+4.9 TEST SITE
+- Dedicated testing environment for visual/video generation
+- Connect Nanobana API for image generation testing
+- Connect Veo API for video generation testing
+- Prompt box input with provider selection (Nanobana or Veo)
+- Output display area showing generated images/videos
+- History of all prompts and generated outputs
+- Retry prompts with modifications
+- Used to test how things look before building them out
+- Preview product concepts, UI mockups, demo animations
+
+4.10 QUICK IDEA CAPTURE (AI-POWERED)
+- Direct message/input box accessible from anywhere in the app (floating button or keyboard shortcut)
+- Send a quick message → AI reads it → auto-categorizes and adds to Ideas module
+- User can add details later from the Ideas section
+- AI extracts: title, category guess, key points
+- Works like a voice-to-idea pipeline (text input for now)
+
+4.11 INDUSTRY PORTFOLIOS (Product Division)
+- Dedicated section to organize products/projects by target industry
+- Industries: Medical/Doctors, Gym/Fitness, Education, SaaS, E-commerce, Other
+- Each industry has: products targeting it, client projects in it, revenue from it
+- Dashboard view showing industry-wise breakdown
+- Prevents mixing up different verticals — keeps context clear
+- Link clients and projects to their respective industry
+
+4.12 LEGAL DOCUMENTS
+- Section to store, organize, and manage legal documents
+- Document types: contracts, NDAs, agreements, invoices, compliance docs
+- Upload PDFs/docs, tag by client/project/type
+- Expiry tracking with reminders (contract renewal dates)
+- Version history for documents
+- Quick search across all legal docs
+- Link documents to clients and projects
+
+4.13 EMPLOYEE MANAGEMENT
+- Section to manage team/contractor information
+- Employee profiles: name, role, contact, skills, hourly rate
+- Track availability and workload
+- Link employees to projects and tasks
+- Payment tracking (hours worked, payments made)
+- Contract details and renewal dates
+- Note: starts with 2 founders but scalable for future hires/contractors
+
+4.14 BUSINESS MODEL / ARCHITECTURE
+- Dedicated section to document business models for each product
+- Canvas-style view (Business Model Canvas layout)
+- Architecture diagrams (embed or link to diagrams)
+- Revenue model documentation per product
+- Value propositions, customer segments, key resources
+- Version history — track how models evolve
+- Link to products in Industry Portfolios
+
+4.15 MONEY MANAGEMENT (Revenue & Costs)
+- Financial dashboard: revenue, costs, profit/loss overview
+- Track income streams by product/client/industry
+- Track expenses by category (tools, hosting, contractors, marketing, etc.)
+- Monthly/quarterly/annual views with charts
+- Invoice tracking (sent, paid, overdue)
+- AI assist via Vertex AI:
+  - Spending pattern analysis
+  - Revenue forecasting
+  - Budget recommendations
+  - Anomaly detection (unusual expenses)
+- Export financial reports (PDF/Excel)
+- Link transactions to clients/projects
+
+4.16 EXPLORE / LEARNING HUB
+- Section for curating study material and research
+- Auto-updated with relevant articles, papers, tutorials based on interests
+- AI-integrated (Vertex AI) for:
+  - Summarizing long articles/papers into key points
+  - Recommending related material
+  - Creating study plans from saved resources
+  - Q&A on saved materials ("ask about this article")
+- Organize by topic/industry/skill
+- Bookmark and highlight key passages
+- Shared between both users — collaborative learning
+
+4.17 API / MCP SERVER (External Integration)
+- Expose an API/MCP server endpoint for the app
+- Allows connecting the ops hub to Claude (or other AI assistants)
+- MCP tools exposed: create task, add idea, add client note, get summary, log communication
+- Authentication via API key
+- Enables voice/chat AI workflows that write back into the ops hub
+- Useful for: "Hey Claude, add a task for..." → task appears in ops hub
+
+5. AI INTEGRATION
+-------------------------------------------------------------------------------
+Provider: Google Cloud Vertex AI (Gemini Pro model)
+Use Cases:
+- Idea fact-checking and validation
+- Market feasibility analysis
+- Claim verification with sources
+- Confidence scoring
+- Client communication insights (summarize, flag changes, action items)
+- Content idea validation (feasibility, audience fit, trend analysis)
+- Content outline generation
+- Sentiment analysis on client communications
+
+Fathom AI (Meeting Intelligence):
+- Recording of full meetings
+- AI-generated summary points
+- Full transcript
+- Integration: Paste shared Fathom link after each meeting
+- No API key required — uses shared link access
+- Data stored locally for searchability and task creation
+
+Nanobana (Image Generation):
+- REST API with API key authentication
+- Generate visual concepts, UI mockups, marketing assets
+- Used via Test Site module
+- 60-second timeout per generation
+
+Veo (Video Generation):
+- Google DeepMind / Vertex AI integration
+- Generate demo videos, product animations, concept videos
+- Used via Test Site module
+- 120-second timeout per generation
+
+Integration:
+- Async processing (non-blocking)
+- Results stored for historical reference
+- Graceful fallback when AI service unavailable
+- Temperature: 0.3 for validation, 0.1 for fact-checking, 0.2 for insights
+
+6. REAL-TIME COLLABORATION
+-------------------------------------------------------------------------------
+- WebSocket-based real-time sync between both users
+- Operational Transform for concurrent edit conflict resolution
+- User presence indicators
+- Live updates across all modules (tasks, meetings, workspace)
+- Reconnection with operation replay on connection drops
+
+7. UI/UX REQUIREMENTS
+-------------------------------------------------------------------------------
+Design Inspiration: Apple.com
+- Clean, minimal interface with generous whitespace
+- Elegant typography (SF Pro / Inter font family)
+- Smooth animations and transitions (Framer Motion)
+- Subtle shadows and depth
+- Consistent spacing system (8px grid)
+- Dark/light mode support
+- Responsive but optimized for desktop
+- Target initial load: < 3 seconds
+- Code-split by module, lazy-load heavy components
+
+8. TECHNICAL STACK
+-------------------------------------------------------------------------------
+
+Frontend:
+- React / Next.js (SPA)
+- TailwindCSS (utility-first styling)
+- Framer Motion (animations)
+- Tiptap or Plate (rich text / block editor)
+- Recharts or Tremor (dashboard charts)
+- Socket.io Client (real-time)
+
+Backend:
+- Node.js with Express or Fastify
+- PostgreSQL (primary database)
+- Redis (caching, sessions, pub/sub)
+- Socket.io (WebSocket server)
+- Google Cloud Vertex AI SDK
+- Google APIs Node.js Client (Calendar, Gmail, Meet)
+- Prisma or Drizzle (ORM)
+
+Infrastructure (GCP):
+- Cloud Run or GKE (hosting)
+- Cloud SQL for PostgreSQL
+- Memorystore for Redis
+- Cloud Storage (file uploads + generated media)
+- Secret Manager (credentials)
+- Cloud CDN (static assets)
+
+External Services:
+- Google Meet / Calendar API (OAuth 2.0)
+- Gmail API (OAuth 2.0, gmail.readonly scope)
+- WhatsApp Business API (Meta Cloud API)
+- Fathom AI (shared link access, no API key)
+- Nanobana API (API key auth)
+- Veo API (GCP Vertex AI)
+
+9. SECURITY
+-------------------------------------------------------------------------------
+- JWT authentication (15-min access tokens, 7-day refresh tokens)
+- Maximum 2 users enforced at system level
+- All data encrypted at rest (GCP default)
+- TLS for all connections
+- Input validation and sanitization on all endpoints
+- CORS restricted to known origins
+- Rate limiting on auth endpoints
+- API keys in GCP Secret Manager
+
+10. NON-FUNCTIONAL REQUIREMENTS
+-------------------------------------------------------------------------------
+- Performance: < 200ms API response time for standard CRUD operations
+- Availability: 99.5% uptime (internal tool, not mission-critical SLA)
+- Data: Daily automated backups via Cloud SQL
+- Scalability: Designed for 2 users (no horizontal scaling needed)
+- Browser Support: Latest Chrome, Safari, Firefox
+
+11. SUCCESS METRICS
+-------------------------------------------------------------------------------
+- Both founders actively using the platform daily
+- All meetings documented with tasks generated
+- Client pipeline tracked end-to-end
+- Content published on schedule
+- Ideas validated before development investment
+- Single source of truth for all operations
+
+12. OUT OF SCOPE (V1)
+-------------------------------------------------------------------------------
+- Mobile app (responsive web only)
+- External user access / client portal
+- Billing or invoicing
+- Advanced reporting / BI dashboards
+- Multi-tenant architecture
+
+===============================================================================
+Document Version: 2.0
+Created: June 2026
+Updated: June 2026 — Added Google Meet, Communication Tracking, Content AI,
+         Test Site module
+Status: Draft
+===============================================================================
