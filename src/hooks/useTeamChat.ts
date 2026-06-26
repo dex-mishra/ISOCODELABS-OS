@@ -292,6 +292,44 @@ export function useTeamChat() {
     }
   }, [activeChannel, hasMore, isLoadingMore, messages, authFetch]);
 
+  // Polling fallback: fetch new messages every 5s when Socket.io is NOT connected
+  useEffect(() => {
+    // Only poll when there's an active channel and socket is not connected
+    if (!activeChannel || connectionStatus === 'connected') return;
+
+    const pollMessages = async () => {
+      try {
+        const res = await authFetch(
+          `/api/team-chat/channels/${activeChannel}/messages`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          // API returns messages in desc order, reverse to chronological
+          const fetched: TeamMessage[] = (data.messages as TeamMessage[]).reverse();
+
+          setMessages((prev) => {
+            // Find messages not already in state (compare by ID)
+            const existingIds = new Set(prev.map((m) => m.id));
+            const newMessages = fetched.filter((m) => !existingIds.has(m.id));
+
+            if (newMessages.length === 0) return prev;
+
+            // Append new messages at the end (they are newer)
+            return [...prev, ...newMessages];
+          });
+        }
+      } catch (error) {
+        console.error('Polling failed:', error);
+      }
+    };
+
+    const intervalId = setInterval(pollMessages, 5000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [activeChannel, connectionStatus, authFetch]);
+
   // Mark channel as read
   const markAsRead = useCallback(
     async (channelId: string) => {
