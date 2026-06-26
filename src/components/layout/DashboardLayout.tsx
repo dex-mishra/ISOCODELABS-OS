@@ -30,6 +30,7 @@ import {
   Compass,
   CheckCircle,
   MessageSquare,
+  Layers,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import GlobalChatPanel from '@/components/modules/GlobalChatPanel';
@@ -54,6 +55,7 @@ const navItems: NavItem[] = [
   { name: 'Workspace', href: '/workspace', icon: Folder },
   { name: 'Legal', href: '/legal', icon: Scale },
   { name: 'Business Model', href: '/business-model', icon: Layout },
+  { name: 'Child Brands', href: '/child-brands', icon: Layers },
   { name: 'Money', href: '/money', icon: IndianRupee },
   { name: 'Explore', href: '/explore', icon: Compass },
   { name: 'Test Site', href: '/test-site', icon: FlaskConical },

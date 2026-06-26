@@ -8,6 +8,39 @@
   --card-bg: #ffffff;
   --border-color: #e5e5ea;
   --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* ──────────────────────────────────────────────────────────────────────
+     ISOCODELABS Design System brand tokens.
+     Inherited from ICLabs-Design-BrandOS (design/tokens/*.json + themes.json).
+     Exposed as CSS custom properties so child products can reference the
+     canonical design language directly. Keep synchronized with the source.
+     ────────────────────────────────────────────────────────────────────── */
+  --brand-primary: #0B0D10;
+  --brand-secondary: #1C1F23;
+  --brand-tertiary: #9CA3A8;
+  --brand-surface: #FAFAF8;
+  --brand-surface-muted: #ECECE8;
+  --brand-cobalt: #2563EB;
+  --brand-cobalt-hover: #1D4ED8;
+  --brand-cobalt-active: #1E40AF;
+  --brand-copper: #B8734A;
+  --brand-copper-hover: #A9653E;
+  --brand-copper-active: #8F5533;
+  --brand-success: #16A34A;
+  --brand-warning: #D97706;
+  --brand-danger: #DC2626;
+  --brand-info: #2563EB;
+
+  /* Theme-aware aliases (light) — from themes.json `light` */
+  --brand-background: #FFFFFF;
+  --brand-surface-elevated: #FFFFFF;
+  --brand-text-primary: #0B0D10;
+  --brand-text-secondary: #4B5563;
+  --brand-text-tertiary: #9CA3A8;
+  --brand-border: #D9D9D6;
+  --brand-border-subtle: #ECECE8;
+  --brand-accent: #2563EB;
+  --brand-shadow: 0 10px 30px rgba(11, 13, 16, 0.08);
 }
 
 .dark {
@@ -15,6 +48,18 @@
   --foreground: #f5f5f7;
   --card-bg: #1c1c1e;
   --border-color: #2c2c2e;
+
+  /* Theme-aware aliases (dark) — from themes.json `dark` */
+  --brand-background: #0B0D10;
+  --brand-surface: #1C1F23;
+  --brand-surface-elevated: #24282E;
+  --brand-text-primary: #FFFFFF;
+  --brand-text-secondary: #D9D9D6;
+  --brand-text-tertiary: #9CA3A8;
+  --brand-border: rgba(255, 255, 255, 0.08);
+  --brand-border-subtle: rgba(255, 255, 255, 0.05);
+  --brand-accent: #2563EB;
+  --brand-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
 }
 
 body {
