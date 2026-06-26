@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     const assigneeId = searchParams.get('assigneeId');
     const projectId = searchParams.get('projectId');
     const meetingId = searchParams.get('meetingId');
+    const ventureId = searchParams.get('venture_id');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const search = searchParams.get('search');
@@ -51,6 +52,9 @@ export async function GET(req: NextRequest) {
       } else {
         whereClause.meeting_id = meetingId;
       }
+    }
+    if (ventureId) {
+      whereClause.venture_id = ventureId;
     }
 
     if (startDate || endDate) {
@@ -106,7 +110,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, description, status, priority, assignee_id, due_date, meeting_id, project_id, tags } = body;
+    const { title, description, status, priority, assignee_id, due_date, meeting_id, project_id, venture_id, tags } = body;
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required.' }, { status: 400 });
@@ -122,6 +126,7 @@ export async function POST(req: NextRequest) {
         due_date: due_date ? new Date(due_date) : null,
         meeting_id: meeting_id || null,
         project_id: project_id || null,
+        venture_id: venture_id || null,
         tags: tags || [],
         created_by: user.id,
       },

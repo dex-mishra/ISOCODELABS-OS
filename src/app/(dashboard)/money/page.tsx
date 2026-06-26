@@ -88,6 +88,7 @@ interface FinancialAnalysis {
 interface ClientOption { id: string; name: string; }
 interface ProjectOption { id: string; name: string; }
 interface IndustryOption { id: string; name: string; icon?: string; }
+interface VentureOption { id: string; name: string; type: string; }
 
 const TX_CATEGORIES = [
   'Client Payment', 'Product Revenue', 'Hosting', 'Tools',
@@ -113,6 +114,8 @@ export default function MoneyPage() {
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [_industries, setIndustries] = useState<IndustryOption[]>([]);
+  const [ventures, setVentures] = useState<VentureOption[]>([]);
+  const [ventureFilter, setVentureFilter] = useState('');
 
   // AI
   const [aiAnalysis, setAiAnalysis] = useState<FinancialAnalysis | null>(null);
@@ -144,10 +147,12 @@ export default function MoneyPage() {
   /* ── Fetch ──────────────────────────────────────────────────────────── */
   const fetchTransactions = useCallback(async () => {
     try {
-      const res = await authFetch('/api/money/transactions');
+      const params = new URLSearchParams();
+      if (ventureFilter) params.append('venture_id', ventureFilter);
+      const res = await authFetch(`/api/money/transactions${params.toString() ? '?' + params.toString() : ''}`);
       if (res.ok) setTransactions(await res.json());
     } catch (e) { console.error(e); }
-  }, [authFetch]);
+  }, [authFetch, ventureFilter]);
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -158,12 +163,13 @@ export default function MoneyPage() {
 
   const fetchMeta = useCallback(async () => {
     try {
-      const [cRes, pRes, iRes] = await Promise.all([
-        authFetch('/api/clients'), authFetch('/api/projects'), authFetch('/api/industries'),
+      const [cRes, pRes, iRes, vRes] = await Promise.all([
+        authFetch('/api/clients'), authFetch('/api/projects'), authFetch('/api/industries'), authFetch('/api/ventures'),
       ]);
       if (cRes.ok) { const d = await cRes.json(); setClients(Array.isArray(d) ? d : d.clients || []); }
       if (pRes.ok) setProjects(await pRes.json());
       if (iRes.ok) setIndustries(await iRes.json());
+      if (vRes.ok) setVentures(await vRes.json());
     } catch (e) { console.error(e); }
   }, [authFetch]);
 
@@ -394,7 +400,20 @@ export default function MoneyPage() {
       </div>
 
       {/* ── Tab bar ─────────────────────────────────────────────────── */}
-      <div className="flex gap-1 bg-apple-gray dark:bg-sf-bg-elevatedDark p-1 rounded-xl w-fit">
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* Venture Filter */}
+        <select
+          value={ventureFilter}
+          onChange={(e) => setVentureFilter(e.target.value)}
+          className="bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-apple-blue"
+        >
+          <option value="">All Ventures</option>
+          {ventures.map(v => (
+            <option key={v.id} value={v.id}>{v.name}</option>
+          ))}
+        </select>
+
+        <div className="flex gap-1 bg-apple-gray dark:bg-sf-bg-elevatedDark p-1 rounded-xl w-fit">
         {([
           { key: 'overview' as TabKey, label: 'Overview', icon: BarChart3 },
           { key: 'transactions' as TabKey, label: 'Transactions', icon: Receipt },
@@ -416,6 +435,7 @@ export default function MoneyPage() {
             </button>
           );
         })}
+      </div>
       </div>
 
       {/* ── OVERVIEW TAB ────────────────────────────────────────────── */}

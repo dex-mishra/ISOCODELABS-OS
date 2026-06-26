@@ -48,7 +48,7 @@ const navItems: NavItem[] = [
   { name: 'Clients', href: '/clients', icon: Users },
   { name: 'Projects', href: '/projects', icon: Briefcase },
   { name: 'Employees', href: '/employees', icon: Contact },
-  { name: 'Industries', href: '/industries', icon: Building2 },
+  { name: 'Ventures', href: '/ventures', icon: Building2 },
   { name: 'Content', href: '/content', icon: FileText },
   { name: 'Ideas', href: '/ideas', icon: Lightbulb },
   { name: 'Workspace', href: '/workspace', icon: Folder },

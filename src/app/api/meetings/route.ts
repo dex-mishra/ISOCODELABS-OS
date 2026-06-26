@@ -17,11 +17,16 @@ export async function GET(req: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const search = searchParams.get('search');
+    const ventureId = searchParams.get('venture_id');
 
     const whereClause: Prisma.MeetingWhereInput = {};
 
     if (status) {
       whereClause.status = status as MeetingStatus;
+    }
+
+    if (ventureId) {
+      whereClause.venture_id = ventureId;
     }
 
     if (startDate || endDate) {
@@ -78,7 +83,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, description, agenda, scheduled_at, duration, attendeeIds } = body;
+    const { title, description, agenda, scheduled_at, duration, attendeeIds, venture_id } = body;
 
     if (!title || !scheduled_at || !duration) {
       return NextResponse.json(
@@ -108,6 +113,7 @@ export async function POST(req: NextRequest) {
         duration: parseInt(duration, 10),
         google_meet_link: googleMeetData.google_meet_link,
         google_calendar_event_id: googleMeetData.google_calendar_event_id,
+        venture_id: venture_id || null,
         created_by: user.id,
         attendees: {
           create: (attendeeIds || []).map((id: string) => ({

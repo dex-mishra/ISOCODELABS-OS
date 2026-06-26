@@ -109,6 +109,7 @@ export default function TasksPage() {
   const [users, setUsers] = useState<Assignee[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [ventures, setVentures] = useState<{ id: string; name: string }[]>([]);
 
   // Page Controls
   const [loading, setLoading] = useState(true);
@@ -143,6 +144,7 @@ export default function TasksPage() {
     assignee_id: '',
     project_id: '',
     meeting_id: '',
+    venture_id: '',
     due_date: '',
     tagsString: '',
   });
@@ -181,18 +183,20 @@ export default function TasksPage() {
     }
   }, [authFetch]);
 
-  // Fetch options (users, projects, meetings)
+  // Fetch options (users, projects, meetings, ventures)
   const fetchOptions = useCallback(async () => {
     try {
-      const [uRes, pRes, mRes] = await Promise.all([
+      const [uRes, pRes, mRes, vRes] = await Promise.all([
         authFetch('/api/users'),
         authFetch('/api/projects'),
         authFetch('/api/meetings'),
+        authFetch('/api/ventures'),
       ]);
 
       if (uRes.ok) setUsers(await uRes.json());
       if (pRes.ok) setProjects(await pRes.json());
       if (mRes.ok) setMeetings(await mRes.json());
+      if (vRes.ok) setVentures(await vRes.json());
     } catch (err) {
       console.error('Failed to load form options:', err);
     }
@@ -486,6 +490,7 @@ export default function TasksPage() {
           assignee_id: newTaskData.assignee_id || null,
           project_id: newTaskData.project_id || null,
           meeting_id: newTaskData.meeting_id || null,
+          venture_id: newTaskData.venture_id || null,
           due_date: newTaskData.due_date ? new Date(newTaskData.due_date).toISOString() : null,
         }),
       });
@@ -501,6 +506,7 @@ export default function TasksPage() {
         assignee_id: '',
         project_id: '',
         meeting_id: '',
+        venture_id: '',
         due_date: '',
         tagsString: '',
       });
@@ -1244,14 +1250,30 @@ export default function TasksPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-[11px] text-neutral-500 font-semibold uppercase block mb-1">Tags (comma-separated)</label>
-                    <Input
-                      placeholder="e.g. Design, Frontend"
-                      value={newTaskData.tagsString}
-                      onChange={(e) => setNewTaskData({ ...newTaskData, tagsString: e.target.value })}
-                      className="bg-neutral-950 border-neutral-850 text-white"
-                    />
+                    <label className="text-[11px] text-neutral-500 font-semibold uppercase block mb-1">Venture</label>
+                    <select
+                      value={newTaskData.venture_id}
+                      onChange={(e) => setNewTaskData({ ...newTaskData, venture_id: e.target.value })}
+                      className="w-full bg-neutral-950 border border-neutral-850 text-xs text-neutral-300 rounded-lg p-2.5 outline-none focus:border-neutral-700"
+                    >
+                      <option value="">None</option>
+                      {ventures.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] text-neutral-500 font-semibold uppercase block mb-1">Tags (comma-separated)</label>
+                  <Input
+                    placeholder="e.g. Design, Frontend"
+                    value={newTaskData.tagsString}
+                    onChange={(e) => setNewTaskData({ ...newTaskData, tagsString: e.target.value })}
+                    className="bg-neutral-950 border-neutral-850 text-white"
+                  />
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-neutral-850">

@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     const industryId = searchParams.get('industry_id');
     const clientId = searchParams.get('client_id');
     const projectId = searchParams.get('project_id');
+    const ventureId = searchParams.get('venture_id');
     const recurring = searchParams.get('recurring');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
@@ -29,6 +30,7 @@ export async function GET(req: NextRequest) {
         ...(industryId ? { industry_id: industryId } : {}),
         ...(clientId ? { client_id: clientId } : {}),
         ...(projectId ? { project_id: projectId } : {}),
+        ...(ventureId ? { venture_id: ventureId } : {}),
         ...(recurring !== null && recurring !== undefined && recurring !== ''
           ? { recurring: recurring === 'true' }
           : {}),
@@ -71,7 +73,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
 
     const body = await req.json();
-    const { amount, type, category, date, description, client_id, project_id, industry_id, recurring } = body;
+    const { amount, type, category, date, description, client_id, project_id, industry_id, venture_id, recurring } = body;
 
     if (amount === undefined || amount === null || !type || !category || !date) {
       return NextResponse.json(
@@ -97,6 +99,7 @@ export async function POST(req: NextRequest) {
         client_id: client_id || null,
         project_id: project_id || null,
         industry_id: industry_id || null,
+        venture_id: venture_id || null,
         recurring: recurring === true || recurring === 'true' ? true : false,
       },
       include: {

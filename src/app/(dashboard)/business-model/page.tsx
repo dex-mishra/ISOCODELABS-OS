@@ -119,6 +119,8 @@ export default function BusinessModelPage() {
   // Create form
   const [newProductName, setNewProductName] = useState('');
   const [newIndustryId, setNewIndustryId] = useState('');
+  const [newVentureId, setNewVentureId] = useState('');
+  const [ventures, setVentures] = useState<{ id: string; name: string }[]>([]);
 
   // Dirty state tracking
   const [isDirty, setIsDirty] = useState(false);
@@ -150,6 +152,15 @@ export default function BusinessModelPage() {
     }
   }, [authFetch]);
 
+  const fetchVentures = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/ventures');
+      if (res.ok) setVentures(await res.json());
+    } catch (e) {
+      console.error('Failed to fetch ventures', e);
+    }
+  }, [authFetch]);
+
   const fetchVersions = useCallback(async (productName: string) => {
     try {
       const res = await authFetch(`/api/business-model?product_name=${encodeURIComponent(productName)}`);
@@ -162,7 +173,8 @@ export default function BusinessModelPage() {
   useEffect(() => {
     fetchModels();
     fetchIndustries();
-  }, [fetchModels, fetchIndustries]);
+    fetchVentures();
+  }, [fetchModels, fetchIndustries, fetchVentures]);
 
   /* ── Select a model ────────────────────────────────────────────────── */
   const selectModel = (model: BusinessModel) => {
@@ -186,6 +198,7 @@ export default function BusinessModelPage() {
         body: JSON.stringify({
           product_name: newProductName.trim(),
           industry_id: newIndustryId || undefined,
+          venture_id: newVentureId || undefined,
           canvas_data: DEFAULT_CANVAS,
         }),
       });
@@ -194,6 +207,7 @@ export default function BusinessModelPage() {
         setShowCreateModal(false);
         setNewProductName('');
         setNewIndustryId('');
+        setNewVentureId('');
         await fetchModels();
         selectModel(created);
       }
@@ -621,6 +635,19 @@ export default function BusinessModelPage() {
                     <option value="">Select industry…</option>
                     {industries.map((ind) => (
                       <option key={ind.id} value={ind.id}>{ind.icon} {ind.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-sf-text-secondaryLight dark:text-sf-text-secondaryDark mb-1.5">Venture</label>
+                  <select
+                    value={newVentureId}
+                    onChange={(e) => setNewVentureId(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-apple-gray dark:bg-sf-bg-elevatedDark border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-apple-blue/30"
+                  >
+                    <option value="">None</option>
+                    {ventures.map((v) => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
                     ))}
                   </select>
                 </div>

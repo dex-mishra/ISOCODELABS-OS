@@ -24,6 +24,9 @@ export async function GET(req: NextRequest) {
     if (searchParams.get('industry_id')) {
       whereClause.industry_id = searchParams.get('industry_id');
     }
+    if (searchParams.get('venture_id')) {
+      whereClause.venture_id = searchParams.get('venture_id');
+    }
     if (search) {
       whereClause.OR = [
         { name: { contains: search, mode: 'insensitive' } },

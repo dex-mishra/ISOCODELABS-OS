@@ -16,12 +16,14 @@ export async function GET(req: NextRequest) {
     const stage = searchParams.get('pipeline_stage');
     const source = searchParams.get('source');
     const industryId = searchParams.get('industry_id');
+    const ventureId = searchParams.get('venture_id');
 
     const clients = await prisma.client.findMany({
       where: {
         ...(stage ? { pipeline_stage: stage as PipelineStage } : {}),
         ...(source ? { source } : {}),
         ...(industryId ? { industry_id: industryId } : {}),
+        ...(ventureId ? { venture_id: ventureId } : {}),
         ...(search
           ? {
               OR: [

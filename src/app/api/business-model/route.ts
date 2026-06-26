@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const productName = searchParams.get('product_name');
+    const ventureId = searchParams.get('venture_id');
 
     if (productName) {
       // Fetch all versions of a specific product, newest first
@@ -33,6 +34,19 @@ export async function GET(req: NextRequest) {
           industry: { select: { id: true, name: true, icon: true, color: true } },
         },
         orderBy: { version: 'desc' },
+      });
+
+      return NextResponse.json(models);
+    }
+
+    if (ventureId) {
+      // Fetch business models linked to a specific venture
+      const models = await prisma.businessModel.findMany({
+        where: { venture_id: ventureId },
+        include: {
+          industry: { select: { id: true, name: true, icon: true, color: true } },
+        },
+        orderBy: { updated_at: 'desc' },
       });
 
       return NextResponse.json(models);
@@ -77,7 +91,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
 
     const body = await req.json();
-    const { product_name, industry_id, canvas_data, architecture_notes, revenue_model } = body;
+    const { product_name, industry_id, venture_id, canvas_data, architecture_notes, revenue_model } = body;
 
     if (!product_name) {
       return NextResponse.json({ error: 'product_name is required.' }, { status: 400 });
@@ -94,6 +108,7 @@ export async function POST(req: NextRequest) {
       data: {
         product_name,
         industry_id: industry_id || null,
+        venture_id: venture_id || null,
         canvas_data: canvas_data || DEFAULT_CANVAS_DATA,
         architecture_notes: architecture_notes || null,
         revenue_model: revenue_model || null,

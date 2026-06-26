@@ -37,6 +37,7 @@ model User {
   created_team_channels TeamChannel[]     @relation("CreatedTeamChannels")
   channel_memberships   ChannelMember[]   @relation("TeamChannelMemberships")
   sent_team_messages    TeamMessage[]     @relation("SentTeamMessages")
+  created_ventures      Venture[]         @relation("CreatedVentures")
 }
 
 model Meeting {
@@ -56,6 +57,8 @@ model Meeting {
   fathom_summary           String?
   fathom_transcript        String?
   fathom_imported_at       DateTime?
+  venture_id               String?
+  venture                  Venture?      @relation("VentureMeetings", fields: [venture_id], references: [id])
   created_by               String
   creator                  User          @relation("CreatedMeetings", fields: [created_by], references: [id])
   created_at               DateTime      @default(now())
@@ -95,6 +98,8 @@ model Task {
   meeting     Meeting?     @relation(fields: [meeting_id], references: [id])
   project_id  String?
   project     Project?     @relation(fields: [project_id], references: [id])
+  venture_id  String?
+  venture     Venture?     @relation("VentureTasks", fields: [venture_id], references: [id])
   tags        String[]
   created_by  String
   creator     User         @relation("CreatedTasks", fields: [created_by], references: [id])
@@ -154,6 +159,8 @@ model Client {
   total_whatsapp_messages Int           @default(0)
   industry_id             String?
   industry                Industry?     @relation(fields: [industry_id], references: [id])
+  venture_id              String?
+  venture                 Venture?      @relation("VentureClients", fields: [venture_id], references: [id])
   created_by              String
   creator                 User          @relation("CreatedClients", fields: [created_by], references: [id])
   created_at              DateTime      @default(now())
@@ -275,6 +282,8 @@ model Project {
   budget      Float?
   industry_id String?
   industry    Industry?     @relation(fields: [industry_id], references: [id])
+  venture_id  String?
+  venture     Venture?      @relation("VentureProjects", fields: [venture_id], references: [id])
   created_by  String
   creator     User          @relation("CreatedProjects", fields: [created_by], references: [id])
   created_at  DateTime      @default(now())
@@ -669,6 +678,8 @@ model BusinessModel {
   product_name       String
   industry_id        String?
   industry           Industry? @relation(fields: [industry_id], references: [id])
+  venture_id         String?
+  venture            Venture?  @relation("VentureBusinessModels", fields: [venture_id], references: [id])
   canvas_data        Json // 9-block BMC data
   architecture_notes String?
   revenue_model      String?
@@ -687,6 +698,8 @@ model Transaction {
   client      Client?   @relation(fields: [client_id], references: [id])
   industry_id String?
   industry    Industry? @relation(fields: [industry_id], references: [id])
+  venture_id  String?
+  venture     Venture?  @relation("VentureTransactions", fields: [venture_id], references: [id])
   amount      Float
   type        TxType
   category    String
@@ -837,4 +850,64 @@ model TeamMessage {
 
   @@index([channel_id, created_at])
   @@map("team_messages")
+}
+
+
+model Venture {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?  @db.Text
+  type        String   // "PRODUCT" or "SISTER_COMPANY"
+  status      String   @default("ACTIVE") // ACTIVE, PLANNING, PAUSED, ARCHIVED
+  website     String?
+  logo_url    String?
+  created_by  String
+  creator     User     @relation("CreatedVentures", fields: [created_by], references: [id])
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  assets          VentureAsset[]
+  funding_rounds  FundingRound[]
+  tasks           Task[]          @relation("VentureTasks")
+  meetings        Meeting[]       @relation("VentureMeetings")
+  business_models BusinessModel[] @relation("VentureBusinessModels")
+  projects        Project[]       @relation("VentureProjects")
+  clients         Client[]        @relation("VentureClients")
+  transactions    Transaction[]   @relation("VentureTransactions")
+
+  @@map("ventures")
+}
+
+model VentureAsset {
+  id         String   @id @default(uuid())
+  venture_id String
+  venture    Venture  @relation(fields: [venture_id], references: [id], onDelete: Cascade)
+  type       String   // GITHUB, GDRIVE, FIGMA, NOTION, WEBSITE, DOMAIN, OTHER
+  label      String
+  url        String
+  notes      String?  @db.Text
+  created_at DateTime @default(now())
+
+  @@map("venture_assets")
+}
+
+model FundingRound {
+  id               String   @id @default(uuid())
+  venture_id       String
+  venture          Venture  @relation(fields: [venture_id], references: [id], onDelete: Cascade)
+  round_name       String   // "Pre-seed", "Seed", "Series A", etc.
+  target_amount    Float?
+  raised_amount    Float?   @default(0)
+  valuation        Float?
+  status           String   @default("PLANNING") // PLANNING, ACTIVE, CLOSED
+  date             DateTime?
+  investor_notes   String?  @db.Text
+  min_users        Int?
+  min_revenue      Float?
+  min_requirements String?  @db.Text
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@map("funding_rounds")
 }

@@ -6,6 +6,10 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Clearing database...');
 
+  // Venture tables first (depend on Venture)
+  await prisma.fundingRound.deleteMany({});
+  await prisma.ventureAsset.deleteMany({});
+
   // Team chat tables first (depend on User)
   await prisma.teamMessage.deleteMany({});
   await prisma.channelMember.deleteMany({});
@@ -46,6 +50,7 @@ async function main() {
   await prisma.dashboardAccount.deleteMany({});
   await prisma.industryProduct.deleteMany({});
   await prisma.industry.deleteMany({});
+  await prisma.venture.deleteMany({});
   await prisma.user.deleteMany({});
 
   console.log('Seeding users...');
@@ -246,6 +251,48 @@ async function main() {
       status: 'TODO',
       priority: 'HIGH',
       assignee_id: founder1.id,
+      created_by: founder1.id,
+    },
+  });
+
+  console.log('Seeding ventures...');
+
+  const clearquote = await prisma.venture.create({
+    data: {
+      name: 'Clearquote',
+      description: 'RFQ classification via ML for manufacturing industries',
+      type: 'SISTER_COMPANY',
+      status: 'ACTIVE',
+      created_by: founder1.id,
+    },
+  });
+
+  const cvbuddy = await prisma.venture.create({
+    data: {
+      name: 'CVBuddy',
+      description: 'AI-powered resume builder for job seekers',
+      type: 'PRODUCT',
+      status: 'PLANNING',
+      created_by: founder1.id,
+    },
+  });
+
+  const productivityOS = await prisma.venture.create({
+    data: {
+      name: 'ProductivityOS',
+      description: 'Productivity tools for individuals and teams',
+      type: 'SISTER_COMPANY',
+      status: 'PLANNING',
+      created_by: founder1.id,
+    },
+  });
+
+  const meddesk = await prisma.venture.create({
+    data: {
+      name: 'Meddesk',
+      description: 'Healthcare clinic management and booking platform',
+      type: 'SISTER_COMPANY',
+      status: 'PLANNING',
       created_by: founder1.id,
     },
   });
