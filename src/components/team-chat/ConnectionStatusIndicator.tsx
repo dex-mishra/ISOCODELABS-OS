@@ -8,6 +8,9 @@ interface ConnectionStatusIndicatorProps {
 }
 
 export const ConnectionStatusIndicator = ({ status }: ConnectionStatusIndicatorProps) => {
+  // On production (no Socket.io), don't show "Disconnected" — polling handles it
+  // Only show status when reconnecting (transient) or connected
+  if (status === 'disconnected') return null;
   const dotStyles = clsx(
     'w-2 h-2 rounded-full shrink-0',
     {
