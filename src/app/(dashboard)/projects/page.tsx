@@ -13,9 +13,9 @@ import {
   Plus,
   Search,
   Calendar,
-  DollarSign,
   AlertCircle,
-  X
+  X,
+  IndianRupee,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -42,6 +42,8 @@ interface Project {
   budget?: number | null;
   client: Client;
   milestones: Milestone[];
+  industry_id?: string | null;
+  industry?: { id: string; name: string } | null;
 }
 
 export default function ProjectsPage() {
@@ -51,6 +53,7 @@ export default function ProjectsPage() {
   // Data states
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [industries, setIndustries] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,6 +68,7 @@ export default function ProjectsPage() {
     name: '',
     description: '',
     client_id: '',
+    industry_id: '',
     status: 'PLANNING' as Project['status'],
     start_date: '',
     end_date: '',
@@ -90,21 +94,27 @@ export default function ProjectsPage() {
     }
   }, [authFetch, statusFilter, searchQuery]);
 
-  const fetchClients = useCallback(async () => {
+  const fetchMeta = useCallback(async () => {
     try {
-      const res = await authFetch('/api/clients');
-      if (res.ok) {
-        setClients(await res.json());
+      const [clientRes, indRes] = await Promise.all([
+        authFetch('/api/clients'),
+        authFetch('/api/industries'),
+      ]);
+      if (clientRes.ok) {
+        setClients(await clientRes.json());
+      }
+      if (indRes.ok) {
+        setIndustries(await indRes.json());
       }
     } catch (err) {
-      console.error('Failed to load clients:', err);
+      console.error('Failed to load metadata:', err);
     }
   }, [authFetch]);
 
   useEffect(() => {
     fetchProjects();
-    fetchClients();
-  }, [fetchProjects, fetchClients]);
+    fetchMeta();
+  }, [fetchProjects, fetchMeta]);
 
   // Real-time synchronization
   useEffect(() => {
@@ -134,6 +144,7 @@ export default function ProjectsPage() {
           start_date: newProjectData.start_date || null,
           end_date: newProjectData.end_date || null,
           budget: newProjectData.budget || null,
+          industry_id: newProjectData.industry_id || null,
         }),
       });
 
@@ -144,6 +155,7 @@ export default function ProjectsPage() {
         name: '',
         description: '',
         client_id: '',
+        industry_id: '',
         status: 'PLANNING',
         start_date: '',
         end_date: '',
@@ -254,11 +266,21 @@ export default function ProjectsPage() {
               <Link key={project.id} href={`/projects/${project.id}`} passHref>
                 <Card className="bg-neutral-900/40 border-neutral-850 hover:border-neutral-750 transition-all cursor-pointer h-full flex flex-col group relative overflow-hidden">
                   <CardHeader className="flex justify-between items-start gap-4">
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-neutral-500 font-semibold uppercase tracking-wider block">
-                        {project.client?.company || project.client?.name}
-                      </span>
-                      <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors leading-snug">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] text-neutral-500 font-semibold uppercase tracking-wider truncate" title={project.client?.company || project.client?.name || ''}>
+                          {project.client?.company || project.client?.name}
+                        </span>
+                        {project.industry && (
+                          <>
+                            <span className="text-neutral-600 text-[10px] font-semibold">•</span>
+                            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-neutral-400 bg-neutral-800 px-1.5 py-0.5 rounded">
+                              {project.industry.name}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors leading-snug truncate" title={project.name}>
                         {project.name}
                       </h3>
                     </div>
@@ -299,7 +321,7 @@ export default function ProjectsPage() {
                       </span>
                       {project.budget !== null && project.budget !== undefined && (
                         <span className="flex items-center text-neutral-300 font-semibold">
-                          <DollarSign className="w-3 h-3 text-neutral-500" />
+                          <IndianRupee className="w-3 h-3 text-neutral-500" />
                           {project.budget.toLocaleString()}
                         </span>
                       )}
@@ -377,6 +399,21 @@ export default function ProjectsPage() {
                     </select>
                   </div>
                   <div>
+                    <label className="text-[11px] text-neutral-500 font-semibold uppercase block mb-1">Industry</label>
+                    <select
+                      value={newProjectData.industry_id}
+                      onChange={(e) => setNewProjectData({ ...newProjectData, industry_id: e.target.value })}
+                      className="w-full bg-neutral-950 border border-neutral-850 text-xs text-neutral-300 rounded-lg p-2.5 outline-none focus:border-neutral-700"
+                    >
+                      <option value="">Select industry...</option>
+                      {industries.map((ind) => (
+                        <option key={ind.id} value={ind.id}>
+                          {ind.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
                     <label className="text-[11px] text-neutral-500 font-semibold uppercase block mb-1">Project Status</label>
                     <select
                       value={newProjectData.status}
@@ -411,10 +448,10 @@ export default function ProjectsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-neutral-500 font-semibold uppercase block mb-1">Budget ($)</label>
+                    <label className="text-[11px] text-neutral-500 font-semibold uppercase block mb-1">Budget (₹)</label>
                     <Input
                       type="number"
-                      placeholder="USD"
+                      placeholder="INR"
                       value={newProjectData.budget}
                       onChange={(e) => setNewProjectData({ ...newProjectData, budget: e.target.value })}
                       className="bg-neutral-950 border-neutral-850 text-white"

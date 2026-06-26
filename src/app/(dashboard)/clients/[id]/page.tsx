@@ -8,9 +8,9 @@ import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Avatar } from '@/components/ui/Avatar';
 import {
-  Mail, Phone, Building2, DollarSign, X, ChevronLeft, Sparkles,
+  Mail, Phone, Building2, X, ChevronLeft, Sparkles,
   MessageSquare, ArrowDownLeft, ArrowUpRight, AlertCircle, CheckCircle2,
-  Clock, Zap, RefreshCw, Plus, Link as LinkIcon,
+  Clock, Zap, RefreshCw, Plus, Link as LinkIcon, Scale, IndianRupee,
 } from 'lucide-react';
 import { format, formatDistanceToNow, subDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -81,6 +81,9 @@ interface ClientDetail {
   interactions: Interaction[];
   client_insights: ClientInsight[];
   projects: Array<{ id: string; name: string; status: string }>;
+  transactions: Array<{ id: string; amount: number; type: 'INCOME' | 'EXPENSE'; category: string; date: string; description: string | null }>;
+  invoices: Array<{ id: string; invoice_number: string; amount: number; total: number; status: string; issue_date: string }>;
+  industry: { id: string; name: string } | null;
 }
 
 // ─── Stage config ─────────────────────────────────────────────────────────────
@@ -126,6 +129,10 @@ export default function ClientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
+  // Linked legal documents
+  const [linkedDocs, setLinkedDocs] = useState<any[]>([]);
+  const [docsLoading, setDocsLoading] = useState(true);
+
   // Timeline state
   const [timeline, setTimeline] = useState<CommunicationLog[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
@@ -156,6 +163,9 @@ export default function ClientDetailPage() {
   const [connectingWa, setConnectingWa] = useState(false);
   const [submittingLog, setSubmittingLog] = useState(false);
   const [submittingInteraction, setSubmittingInteraction] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -170,10 +180,19 @@ export default function ClientDetailPage() {
       const data: ClientDetail = await res.json();
       setClient(data);
       setTimeline(data.communication_logs.slice(0, 20));
+
+      // Fetch linked legal documents
+      setDocsLoading(true);
+      const docsRes = await authFetch(`/api/legal?client_id=${clientId}`);
+      if (docsRes.ok) {
+        const docsData = await docsRes.json();
+        setLinkedDocs(docsData);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+      setDocsLoading(false);
     }
   }, [authFetch, clientId, router]);
 
@@ -312,6 +331,29 @@ export default function ClientDetailPage() {
     } finally { setSubmittingInteraction(false); }
   };
 
+  // Delete client profile after double confirmation
+  const handleDeleteClient = async () => {
+    if (deleteConfirmInput !== client?.name) return;
+    setIsDeleting(true);
+    try {
+      const res = await authFetch(`/api/clients/${clientId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setIsDeleteModalOpen(false);
+        router.push('/clients');
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Failed to delete client', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('An unexpected error occurred', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // Generate AI insights
   const handleGenerateInsight = async () => {
     setGeneratingInsight(true);
@@ -416,6 +458,11 @@ export default function ClientDetailPage() {
                   <span className="text-sm">{client.company}</span>
                 </div>
               )}
+              {client.industry && (
+                <div className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-0.5 rounded-full bg-apple-blue/10 text-apple-blue text-[11px] font-medium border border-apple-blue/20">
+                  <span>💼 {client.industry.name}</span>
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-4 mt-3">
                 <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white transition-colors">
                   <Mail className="w-3.5 h-3.5" /> {client.email}
@@ -427,28 +474,37 @@ export default function ClientDetailPage() {
                 )}
                 {client.value && (
                   <span className="flex items-center gap-1.5 text-sm text-amber-400 font-semibold">
-                    <DollarSign className="w-3.5 h-3.5" /> {client.value.toLocaleString()}
+                    <IndianRupee className="w-3.5 h-3.5" /> {client.value.toLocaleString()}
                   </span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Projects quick links */}
-          {client.projects.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <p className="text-xs text-neutral-500 font-medium mb-1">Projects</p>
-              {client.projects.slice(0, 3).map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => router.push(`/projects/${p.id}`)}
-                  className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-blue-400 transition-colors"
-                >
-                  <LinkIcon className="w-3 h-3" /> {p.name}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Actions Column */}
+          <div className="flex flex-col gap-3 items-end shrink-0">
+            {client.projects.length > 0 && (
+              <div className="flex flex-col gap-1 items-end">
+                <p className="text-xs text-neutral-500 font-medium mb-1">Projects</p>
+                {client.projects.slice(0, 3).map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => router.push(`/projects/${p.id}`)}
+                    className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-blue-400 transition-colors"
+                  >
+                    <LinkIcon className="w-3 h-3" /> {p.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="text-red-500 hover:bg-red-500/10 border-red-500/20 hover:border-red-500 text-xs px-3 py-1.5 mt-2 transition-colors animate-in fade-in"
+            >
+              Delete Client
+            </Button>
+          </div>
         </div>
 
         {/* Pipeline Progress Bar */}
@@ -526,6 +582,81 @@ export default function ClientDetailPage() {
           ) : (
             <Button variant="outline" size="sm" onClick={() => setIsWaModalOpen(true)}>Connect WhatsApp</Button>
           )}
+        </div>
+      </div>
+
+      {/* ── FINANCIALS PANEL ────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Financial metrics */}
+        <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-5 space-y-4 md:col-span-1">
+          <h3 className="text-sm font-semibold text-white">Financial Summary</h3>
+          
+          <div className="space-y-3">
+            <div className="p-4 rounded-xl bg-apple-green/5 border border-apple-green/10">
+              <span className="text-[10px] uppercase font-bold text-sf-text-secondaryLight block">Aggregate Revenue</span>
+              <span className="text-2xl font-bold text-apple-green mt-1 block">
+                ₹{(client.transactions?.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + t.amount, 0) || 0).toLocaleString()}
+              </span>
+            </div>
+
+            <div className="p-4 rounded-xl bg-apple-orange/5 border border-apple-orange/10">
+              <span className="text-[10px] uppercase font-bold text-sf-text-secondaryLight block">Outstanding Invoices</span>
+              <span className="text-2xl font-bold text-apple-orange mt-1 block">
+                ₹{(client.invoices?.filter(i => i.status !== 'PAID').reduce((sum, i) => sum + i.total, 0) || 0).toLocaleString()}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Transactions Ledger */}
+        <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-5 md:col-span-1 space-y-3 flex flex-col justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-3">Recent Transactions</h3>
+            <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+              {client.transactions?.map((t) => (
+                <div key={t.id} className="flex items-center justify-between text-xs border-b border-neutral-800/50 pb-2 last:border-0 last:pb-0">
+                  <div>
+                    <p className="font-medium truncate max-w-[140px]">{t.description || t.category}</p>
+                    <p className="text-[10px] text-sf-text-secondaryLight">{t.date ? new Date(t.date).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                  <span className={`font-semibold ${t.type === 'INCOME' ? 'text-apple-green' : 'text-apple-red'}`}>
+                    {t.type === 'INCOME' ? '+' : '-'}₹{t.amount.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+              {(!client.transactions || client.transactions.length === 0) && (
+                <p className="text-xs text-sf-text-secondaryLight text-center py-4">No transactions logged</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Invoices */}
+        <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl p-5 md:col-span-1 space-y-3 flex flex-col justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-3">Client Invoices</h3>
+            <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+              {client.invoices?.map((inv) => (
+                <div key={inv.id} className="flex items-center justify-between text-xs border-b border-neutral-800/50 pb-2 last:border-0 last:pb-0">
+                  <div>
+                    <p className="font-semibold text-apple-blue">{inv.invoice_number}</p>
+                    <p className="text-[10px] text-sf-text-secondaryLight">{inv.issue_date ? new Date(inv.issue_date).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">₹{inv.total.toLocaleString()}</p>
+                    <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded-full font-bold ${
+                      inv.status === 'PAID' ? 'bg-apple-green/10 text-apple-green' : 'bg-apple-orange/10 text-apple-orange'
+                    }`}>
+                      {inv.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {(!client.invoices || client.invoices.length === 0) && (
+                <p className="text-xs text-sf-text-secondaryLight text-center py-4">No invoices found</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -835,6 +966,99 @@ export default function ClientDetailPage() {
         </div>
       </div>
 
+      {/* ── LEGAL DOCUMENTS ─────────────────────────────────────────────── */}
+      <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden">
+        <div className="p-5 border-b border-neutral-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-emerald-900/30 border border-emerald-800/30 flex items-center justify-center">
+              <Scale className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-white">Legal Documents</h2>
+              <p className="text-xs text-neutral-500">Contracts, NDAs, and Agreements</p>
+            </div>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => router.push(`/legal?clientId=${clientId}`)}
+            className="flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" /> Upload Document
+          </Button>
+        </div>
+
+        <div className="p-5">
+          {docsLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 rounded-xl" />
+              ))}
+            </div>
+          ) : linkedDocs.length === 0 ? (
+            <div className="text-center py-6">
+              <Scale className="w-8 h-8 text-neutral-700 mx-auto mb-2" />
+              <p className="text-sm text-neutral-500 font-medium">No documents linked to this client.</p>
+              <button
+                onClick={() => router.push('/legal')}
+                className="text-xs text-emerald-400 hover:text-emerald-300 font-medium mt-2 underline"
+              >
+                Go to Legal to upload one
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {linkedDocs.map((doc) => {
+                const typeColors: Record<string, string> = {
+                  CONTRACT: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                  NDA: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+                  AGREEMENT: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                  INVOICE: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                  COMPLIANCE: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+                };
+                const statusColors: Record<string, string> = {
+                  DRAFT: 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20',
+                  ACTIVE: 'bg-green-500/10 text-green-400 border-green-500/20',
+                  EXPIRED: 'bg-red-500/10 text-red-400 border-red-500/20',
+                };
+
+                return (
+                  <button
+                    key={doc.id}
+                    onClick={() => router.push(`/legal?docId=${doc.id}`)}
+                    className="w-full text-left p-4 bg-neutral-850/35 hover:bg-neutral-800/70 border border-neutral-800 hover:border-neutral-700 rounded-xl transition-all duration-200 group flex flex-col justify-between h-[100px]"
+                  >
+                    <div className="flex items-start justify-between gap-2 w-full">
+                      <span className="font-semibold text-sm text-white group-hover:text-emerald-400 transition-colors line-clamp-1 flex-1">
+                        {doc.title}
+                      </span>
+                      <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${typeColors[doc.type] || 'bg-neutral-800 text-neutral-300 border-neutral-700'}`}>
+                        {doc.type}
+                      </span>
+                    </div>
+
+                    <div className="flex items-end justify-between w-full mt-2 text-xs">
+                      <div className="text-neutral-500">
+                        {doc.expiry_date ? (
+                          <span className="flex items-center gap-1">
+                            Expires {format(new Date(doc.expiry_date), 'MMM d, yyyy')}
+                          </span>
+                        ) : (
+                          <span className="text-neutral-600">No expiry date</span>
+                        )}
+                      </div>
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded border ${statusColors[doc.status] || 'bg-neutral-800 text-neutral-300 border-neutral-700'}`}>
+                        {doc.status}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* ── INTERACTIONS ────────────────────────────────────────────────── */}
       <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden">
         <div className="p-5 border-b border-neutral-800 flex items-center justify-between">
@@ -1048,6 +1272,60 @@ export default function ClientDetailPage() {
                 <Button variant="secondary" onClick={() => setIsInteractionModalOpen(false)}>Cancel</Button>
                 <Button variant="primary" onClick={handleAddInteraction} loading={submittingInteraction}>
                   Log Interaction
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Double Confirmation Delete Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && client && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md shadow-2xl p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-bold text-red-500">Delete Client Profile</h3>
+                <button onClick={() => { setIsDeleteModalOpen(false); setDeleteConfirmInput(''); }} className="text-neutral-500 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <p className="text-sm text-neutral-400">
+                  Are you absolutely sure you want to delete <strong className="text-white">{client.name}</strong>?
+                </p>
+                <div className="p-3 bg-red-950/20 border border-red-900/30 rounded-xl text-xs text-red-400 leading-relaxed">
+                  ⚠️ <strong>Warning:</strong> This action is permanent and cannot be undone. It will delete the client profile and all associated data, including invoices, communications, and transactions.
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-neutral-400 mb-2">
+                    To confirm, please type the client&apos;s name: <strong className="text-white select-none">{client.name}</strong>
+                  </label>
+                  <Input
+                    value={deleteConfirmInput}
+                    onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                    placeholder="Enter client name exactly"
+                    className="bg-neutral-950 border-neutral-800 text-white"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <Button variant="secondary" onClick={() => { setIsDeleteModalOpen(false); setDeleteConfirmInput(''); }}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleDeleteClient}
+                  loading={isDeleting}
+                  disabled={deleteConfirmInput !== client.name}
+                  className="bg-red-600 hover:bg-red-700 text-white border-transparent"
+                >
+                  Confirm Delete
                 </Button>
               </div>
             </motion.div>

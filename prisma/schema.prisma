@@ -8,59 +8,62 @@ generator client {
 }
 
 model User {
-  id                 String             @id @default(uuid())
-  email              String             @unique
-  name               String
-  password_hash      String
-  avatar_url         String?
-  created_at         DateTime           @default(now())
-  updated_at         DateTime           @updatedAt
-  
+  id            String   @id @default(uuid())
+  email         String   @unique
+  name          String
+  password_hash String
+  avatar_url    String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
   // Relations
-  meeting_attendees  MeetingAttendee[]
-  created_meetings   Meeting[]          @relation("CreatedMeetings")
-  assigned_tasks     Task[]             @relation("AssignedTasks")
-  created_tasks      Task[]             @relation("CreatedTasks")
-  assigned_subtasks  SubTask[]          @relation("AssignedSubTasks")
-  created_clients    Client[]           @relation("CreatedClients")
-  created_projects   Project[]          @relation("CreatedProjects")
-  created_content    ContentItem[]      @relation("CreatedContent")
-  created_ideas      Idea[]             @relation("CreatedIdeas")
-  created_content_ideas ContentIdea[]   @relation("CreatedContentIdeas")
-  edited_pages       WorkspacePage[]    @relation("EditedPages")
-  created_pages      WorkspacePage[]    @relation("CreatedPages")
-  created_test_results TestResult[]     @relation("CreatedTestResults")
-  notifications      Notification[]
-  bookmarks          ExploreBookmark[]
-  created_keys       McpApiKey[]        @relation("CreatedKeys")
-  created_interactions Interaction[]    @relation("CreatedInteractions")
+  meeting_attendees     MeetingAttendee[]
+  created_meetings      Meeting[]         @relation("CreatedMeetings")
+  assigned_tasks        Task[]            @relation("AssignedTasks")
+  created_tasks         Task[]            @relation("CreatedTasks")
+  assigned_subtasks     SubTask[]         @relation("AssignedSubTasks")
+  created_clients       Client[]          @relation("CreatedClients")
+  created_projects      Project[]         @relation("CreatedProjects")
+  created_content       ContentItem[]     @relation("CreatedContent")
+  created_ideas         Idea[]            @relation("CreatedIdeas")
+  created_content_ideas ContentIdea[]     @relation("CreatedContentIdeas")
+  edited_pages          WorkspacePage[]   @relation("EditedPages")
+  created_pages         WorkspacePage[]   @relation("CreatedPages")
+  created_test_results  TestResult[]      @relation("CreatedTestResults")
+  notifications         Notification[]
+  bookmarks             ExploreBookmark[]
+  created_keys          McpApiKey[]       @relation("CreatedKeys")
+  created_interactions  Interaction[]     @relation("CreatedInteractions")
+  created_team_channels TeamChannel[]     @relation("CreatedTeamChannels")
+  channel_memberships   ChannelMember[]   @relation("TeamChannelMemberships")
+  sent_team_messages    TeamMessage[]     @relation("SentTeamMessages")
 }
 
 model Meeting {
-  id                        String             @id @default(uuid())
-  title                     String
-  description               String?
-  agenda                    String?
-  notes                     String?
-  scheduled_at              DateTime
-  duration                  Int                // in minutes
-  status                    MeetingStatus      @default(SCHEDULED)
-  google_meet_link          String?
-  google_calendar_event_id  String?
-  meeting_started_at        DateTime?
-  meeting_ended_at          DateTime?
-  fathom_link               String?
-  fathom_summary            String?
-  fathom_transcript         String?
-  fathom_imported_at        DateTime?
-  created_by                String
-  creator                   User               @relation("CreatedMeetings", fields: [created_by], references: [id])
-  created_at                DateTime           @default(now())
-  updated_at                DateTime           @updatedAt
-  
+  id                       String        @id @default(uuid())
+  title                    String
+  description              String?
+  agenda                   String?
+  notes                    String?
+  scheduled_at             DateTime
+  duration                 Int // in minutes
+  status                   MeetingStatus @default(SCHEDULED)
+  google_meet_link         String?
+  google_calendar_event_id String?
+  meeting_started_at       DateTime?
+  meeting_ended_at         DateTime?
+  fathom_link              String?
+  fathom_summary           String?
+  fathom_transcript        String?
+  fathom_imported_at       DateTime?
+  created_by               String
+  creator                  User          @relation("CreatedMeetings", fields: [created_by], references: [id])
+  created_at               DateTime      @default(now())
+  updated_at               DateTime      @updatedAt
+
   // Relations
-  attendees                 MeetingAttendee[]
-  tasks                     Task[]
+  attendees MeetingAttendee[]
+  tasks     Task[]
 }
 
 enum MeetingStatus {
@@ -75,34 +78,36 @@ model MeetingAttendee {
   user_id    String
   meeting    Meeting @relation(fields: [meeting_id], references: [id], onDelete: Cascade)
   user       User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  
+
   @@id([meeting_id, user_id])
 }
 
 model Task {
-  id          String      @id @default(uuid())
+  id          String       @id @default(uuid())
   title       String
   description String?
-  status      TaskStatus  @default(TODO)
+  status      TaskStatus   @default(TODO)
   priority    TaskPriority @default(MEDIUM)
   assignee_id String?
-  assignee    User?       @relation("AssignedTasks", fields: [assignee_id], references: [id])
+  assignee    User?        @relation("AssignedTasks", fields: [assignee_id], references: [id])
   due_date    DateTime?
   meeting_id  String?
-  meeting     Meeting?    @relation(fields: [meeting_id], references: [id])
+  meeting     Meeting?     @relation(fields: [meeting_id], references: [id])
   project_id  String?
-  project     Project?    @relation(fields: [project_id], references: [id])
+  project     Project?     @relation(fields: [project_id], references: [id])
   tags        String[]
   created_by  String
-  creator     User        @relation("CreatedTasks", fields: [created_by], references: [id])
-  created_at  DateTime    @default(now())
-  updated_at  DateTime    @updatedAt
-  
-  comments    Json?       @default("[]")
-  activities  Json?       @default("[]")
-  
+  creator     User         @relation("CreatedTasks", fields: [created_by], references: [id])
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+
+  comments   Json? @default("[]")
+  activities Json? @default("[]")
+
   // Relations
   sub_tasks   SubTask[]
+  employee_id String?
+  employee    Employee? @relation("EmployeeTasks", fields: [employee_id], references: [id], onDelete: SetNull)
 }
 
 enum TaskStatus {
@@ -125,6 +130,7 @@ model SubTask {
   task         Task     @relation(fields: [task_id], references: [id], onDelete: Cascade)
   title        String
   is_completed Boolean  @default(false)
+  order        Int      @default(0)
   assignee_id  String?
   assignee     User?    @relation("AssignedSubTasks", fields: [assignee_id], references: [id])
   created_at   DateTime @default(now())
@@ -146,18 +152,21 @@ model Client {
   last_communication_at   DateTime?
   total_emails            Int           @default(0)
   total_whatsapp_messages Int           @default(0)
+  industry_id             String?
+  industry                Industry?     @relation(fields: [industry_id], references: [id])
   created_by              String
   creator                 User          @relation("CreatedClients", fields: [created_by], references: [id])
   created_at              DateTime      @default(now())
   updated_at              DateTime      @updatedAt
-  
+
   // Relations
-  interactions            Interaction[]
-  communication_logs      CommunicationLog[]
-  client_insights         ClientInsight[]
-  projects                Project[]
-  transactions            Transaction[]
-  invoices                Invoice[]
+  interactions       Interaction[]
+  communication_logs CommunicationLog[]
+  client_insights    ClientInsight[]
+  projects           Project[]
+  transactions       Transaction[]
+  invoices           Invoice[]
+  legal_documents    LegalDocument[]
 }
 
 enum PipelineStage {
@@ -191,9 +200,9 @@ enum InteractionType {
 }
 
 model CommunicationLog {
-  id                        String                 @id @default(uuid())
+  id                        String         @id @default(uuid())
   client_id                 String
-  client                    Client                 @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  client                    Client         @relation(fields: [client_id], references: [id], onDelete: Cascade)
   source                    CommsSource
   direction                 CommsDirection
   subject                   String?
@@ -202,12 +211,12 @@ model CommunicationLog {
   sender_phone              String?
   received_at               DateTime
   thread_id                 String?
-  message_id                String                 @unique
+  message_id                String         @unique
   attachments               String[]
-  sentiment                 SentimentType          @default(NEUTRAL)
-  flagged_as_change_request Boolean                @default(false)
+  sentiment                 SentimentType  @default(NEUTRAL)
+  flagged_as_change_request Boolean        @default(false)
   action_items              String[]
-  created_at                DateTime               @default(now())
+  created_at                DateTime       @default(now())
 }
 
 enum CommsSource {
@@ -228,22 +237,22 @@ enum SentimentType {
 }
 
 model ClientInsight {
-  id                   String             @id @default(uuid())
-  client_id            String
-  client               Client             @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  type                 InsightType
-  timeframe_start      DateTime
-  timeframe_end        DateTime
-  summary              String
-  key_topics           String[]
-  sentiment_overview   SentimentType      @default(NEUTRAL)
-  email_count          Int                @default(0)
-  whatsapp_count       Int                @default(0)
-  manual_log_count     Int                @default(0)
-  action_items         String[]
-  change_requests      String[]
-  generated_by         String
-  created_at           DateTime           @default(now())
+  id                 String        @id @default(uuid())
+  client_id          String
+  client             Client        @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  type               InsightType
+  timeframe_start    DateTime
+  timeframe_end      DateTime
+  summary            String
+  key_topics         String[]
+  sentiment_overview SentimentType @default(NEUTRAL)
+  email_count        Int           @default(0)
+  whatsapp_count     Int           @default(0)
+  manual_log_count   Int           @default(0)
+  action_items       String[]
+  change_requests    String[]
+  generated_by       String
+  created_at         DateTime      @default(now())
 }
 
 enum InsightType {
@@ -255,25 +264,29 @@ enum InsightType {
 }
 
 model Project {
-  id           String        @id @default(uuid())
-  name         String
-  description  String?
-  client_id    String
-  client       Client        @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  status       ProjectStatus @default(PLANNING)
-  start_date   DateTime?
-  end_date     DateTime?
-  budget       Float?
-  created_by   String
-  creator      User          @relation("CreatedProjects", fields: [created_by], references: [id])
-  created_at   DateTime      @default(now())
-  updated_at   DateTime      @updatedAt
-  
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  client_id   String
+  client      Client        @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  status      ProjectStatus @default(PLANNING)
+  start_date  DateTime?
+  end_date    DateTime?
+  budget      Float?
+  industry_id String?
+  industry    Industry?     @relation(fields: [industry_id], references: [id])
+  created_by  String
+  creator     User          @relation("CreatedProjects", fields: [created_by], references: [id])
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+
   // Relations
-  milestones   Milestone[]
-  tasks        Task[]
-  transactions Transaction[]
-  invoices     Invoice[]
+  milestones      Milestone[]
+  tasks           Task[]
+  transactions    Transaction[]
+  invoices        Invoice[]
+  legal_documents LegalDocument[]
+  employees       Employee[]      @relation("EmployeeProjects")
 }
 
 enum ProjectStatus {
@@ -303,44 +316,50 @@ enum MilestoneStatus {
 }
 
 model Industry {
-  id         String            @id @default(uuid())
-  name       String            @unique
-  created_at DateTime          @default(now())
-  updated_at DateTime          @updatedAt
-  
+  id         String   @id @default(uuid())
+  name       String   @unique
+  icon       String? // emoji or icon name
+  color      String? // hex color string e.g. #3B82F6
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
   // Relations
-  products   IndustryProduct[]
+  products          IndustryProduct[]
+  clients           Client[]
+  projects          Project[]
+  business_models   BusinessModel[]
+  transactions      Transaction[]
+  explore_resources ExploreResource[]
 }
 
 model IndustryProduct {
-  id             String          @id @default(uuid())
-  industry_id    String
-  industry       Industry        @relation(fields: [industry_id], references: [id], onDelete: Cascade)
-  name           String
-  description    String?
-  created_at     DateTime        @default(now())
-  updated_at     DateTime        @updatedAt
-  
+  id          String   @id @default(uuid())
+  industry_id String
+  industry    Industry @relation(fields: [industry_id], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
   // Relations
-  content_items  ContentItem[]
-  business_models BusinessModel[]
+  content_items ContentItem[]
 }
 
 model ContentItem {
-  id           String        @id @default(uuid())
+  id           String           @id @default(uuid())
   title        String
   body         String?
   type         ContentType
-  status       ContentStatus @default(IDEA)
+  status       ContentStatus    @default(IDEA)
   product_id   String?
   product      IndustryProduct? @relation(fields: [product_id], references: [id])
   publish_date DateTime?
   platforms    String[]
   tags         String[]
   created_by   String
-  creator      User          @relation("CreatedContent", fields: [created_by], references: [id])
-  created_at   DateTime      @default(now())
-  updated_at   DateTime      @updatedAt
+  creator      User             @relation("CreatedContent", fields: [created_by], references: [id])
+  created_at   DateTime         @default(now())
+  updated_at   DateTime         @updatedAt
 }
 
 enum ContentType {
@@ -360,21 +379,21 @@ enum ContentStatus {
 }
 
 model ContentIdea {
-  id               String               @id @default(uuid())
-  title            String
-  description      String?
-  content_type     ContentType
-  target_audience  String?
-  status           ContentIdeaStatus    @default(RAW)
-  tags             String[]
-  created_by       String
-  creator          User                 @relation("CreatedContentIdeas", fields: [created_by], references: [id])
-  created_at       DateTime             @default(now())
-  updated_at       DateTime             @updatedAt
-  
+  id              String            @id @default(uuid())
+  title           String
+  description     String?
+  content_type    ContentType
+  target_audience String?
+  status          ContentIdeaStatus @default(RAW)
+  tags            String[]
+  created_by      String
+  creator         User              @relation("CreatedContentIdeas", fields: [created_by], references: [id])
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+
   // Relations
-  validations      ContentIdeaValidation[]
-  outlines         ContentOutline[]
+  validations ContentIdeaValidation[]
+  outlines    ContentOutline[]
 }
 
 enum ContentIdeaStatus {
@@ -387,18 +406,18 @@ enum ContentIdeaStatus {
 }
 
 model ContentIdeaValidation {
-  id                String      @id @default(uuid())
-  idea_id           String
-  idea              ContentIdea @relation(fields: [idea_id], references: [id], onDelete: Cascade)
-  feasibility_score Float
+  id                 String      @id @default(uuid())
+  idea_id            String
+  idea               ContentIdea @relation(fields: [idea_id], references: [id], onDelete: Cascade)
+  feasibility_score  Float
   audience_fit_score Float
-  originality_score Float
-  overall_score     Float
-  strengths         String[]
-  weaknesses        String[]
-  recommendations   String[]
-  generated_by      String
-  created_at        DateTime    @default(now())
+  originality_score  Float
+  overall_score      Float
+  strengths          String[]
+  weaknesses         String[]
+  recommendations    String[]
+  generated_by       String
+  created_at         DateTime    @default(now())
 }
 
 model ContentOutline {
@@ -413,20 +432,20 @@ model ContentOutline {
 }
 
 model Idea {
-  id          String        @id @default(uuid())
+  id          String       @id @default(uuid())
   title       String
   description String?
-  category    IdeaCategory  @default(PRODUCT)
-  status      IdeaStatus    @default(RAW)
+  category    IdeaCategory @default(PRODUCT)
+  status      IdeaStatus   @default(RAW)
   impact      Int
   effort      Int
   tags        String[]
-  is_deleted  Boolean       @default(false)
+  is_deleted  Boolean      @default(false)
   created_by  String
-  creator     User          @relation("CreatedIdeas", fields: [created_by], references: [id])
-  created_at  DateTime      @default(now())
-  updated_at  DateTime      @updatedAt
-  
+  creator     User         @relation("CreatedIdeas", fields: [created_by], references: [id])
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+
   // Relations
   validations AiValidation[]
 }
@@ -468,9 +487,9 @@ model WorkspaceFolder {
   icon       String?
   created_at DateTime          @default(now())
   updated_at DateTime          @updatedAt
-  
+
   // Relations
-  pages      WorkspacePage[]
+  pages WorkspacePage[]
 }
 
 model WorkspacePage {
@@ -545,33 +564,49 @@ model Notification {
 }
 
 model McpApiKey {
-  id         String   @id @default(uuid())
-  name       String
-  key_hash   String   @unique
-  is_active  Boolean  @default(true)
-  created_by String
-  creator    User     @relation("CreatedKeys", fields: [created_by], references: [id])
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id           String    @id @default(uuid())
+  name         String
+  key_hash     String    @unique
+  is_active    Boolean   @default(true)
+  permissions  String[]
+  last_used_at DateTime?
+  revoked_at   DateTime?
+  created_by   String
+  creator      User      @relation("CreatedKeys", fields: [created_by], references: [id])
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  @@map("mcp_api_keys")
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
 }
 
 model Employee {
-  id                   String            @id @default(uuid())
+  id                   String         @id @default(uuid())
   name                 String
   role                 String
-  email                String            @unique
+  email                String         @unique
   phone                String?
   skills               String[]
   hourly_rate          Float
   availability         String?
   workload             String?
+  status               EmployeeStatus @default(ACTIVE)
+  contract_start       DateTime?
+  contract_end         DateTime?
   contract_details     String?
   contract_expiry_date DateTime?
-  created_at           DateTime          @default(now())
-  updated_at           DateTime          @updatedAt
-  
+  created_at           DateTime       @default(now())
+  updated_at           DateTime       @updatedAt
+
   // Relations
-  payments             EmployeePayment[]
+  payments        EmployeePayment[]
+  tasks           Task[]            @relation("EmployeeTasks")
+  projects        Project[]         @relation("EmployeeProjects")
+  legal_documents LegalDocument[]
 }
 
 model EmployeePayment {
@@ -580,8 +615,10 @@ model EmployeePayment {
   employee       Employee      @relation(fields: [employee_id], references: [id], onDelete: Cascade)
   hours_worked   Float
   payment_amount Float
+  amount         Float         @default(0)
   status         PaymentStatus @default(PENDING)
   payment_date   DateTime?
+  period         String        @default("")
   notes          String?
   created_at     DateTime      @default(now())
   updated_at     DateTime      @updatedAt
@@ -592,30 +629,74 @@ enum PaymentStatus {
   PAID
 }
 
+enum LegalDocumentType {
+  CONTRACT
+  NDA
+  AGREEMENT
+  INVOICE
+  COMPLIANCE
+}
+
+enum LegalDocumentStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+}
+
+model LegalDocument {
+  id          String              @id @default(uuid())
+  title       String
+  type        LegalDocumentType
+  file_url    String
+  client_id   String?
+  client      Client?             @relation(fields: [client_id], references: [id], onDelete: SetNull)
+  project_id  String?
+  project     Project?            @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  status      LegalDocumentStatus @default(DRAFT)
+  signed_date DateTime?
+  expiry_date DateTime?
+  version     Int                 @default(1)
+  tags        String[]
+  versions    Json?               @default("[]")
+  employee_id String?
+  employee    Employee?           @relation(fields: [employee_id], references: [id], onDelete: SetNull)
+  created_at  DateTime            @default(now())
+  updated_at  DateTime            @updatedAt
+}
+
 model BusinessModel {
-  id                 String          @id @default(uuid())
-  product_id         String
-  product            IndustryProduct @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  canvas_data        Json
-  architecture_links Json
-  value_propositions String?
-  created_at         DateTime        @default(now())
-  updated_at         DateTime        @updatedAt
+  id                 String    @id @default(uuid())
+  product_name       String
+  industry_id        String?
+  industry           Industry? @relation(fields: [industry_id], references: [id])
+  canvas_data        Json // 9-block BMC data
+  architecture_notes String?
+  revenue_model      String?
+  version            Int       @default(1)
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+
+  @@map("business_models")
 }
 
 model Transaction {
-  id               String      @id @default(uuid())
-  project_id       String?
-  project          Project?    @relation(fields: [project_id], references: [id])
-  client_id        String?
-  client           Client?     @relation(fields: [client_id], references: [id])
-  amount           Float
-  type             TxType
-  category         String
-  transaction_date DateTime
-  notes            String?
-  created_at       DateTime    @default(now())
-  updated_at       DateTime    @updatedAt
+  id          String    @id @default(uuid())
+  project_id  String?
+  project     Project?  @relation(fields: [project_id], references: [id])
+  client_id   String?
+  client      Client?   @relation(fields: [client_id], references: [id])
+  industry_id String?
+  industry    Industry? @relation(fields: [industry_id], references: [id])
+  amount      Float
+  type        TxType
+  category    String
+  date        DateTime
+  description String?
+  recurring   Boolean   @default(false)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  @@map("transactions")
 }
 
 enum TxType {
@@ -631,66 +712,129 @@ model Invoice {
   client         Client?       @relation(fields: [client_id], references: [id])
   invoice_number String        @unique
   amount         Float
-  status         InvoiceStatus @default(SENT)
+  total          Float         @default(0)
+  items          Json?         @default("[]")
+  status         InvoiceStatus @default(DRAFT)
   issue_date     DateTime
   due_date       DateTime
   file_url       String?
   created_at     DateTime      @default(now())
   updated_at     DateTime      @updatedAt
+
+  @@map("invoices")
 }
 
 enum InvoiceStatus {
+  DRAFT
   SENT
   PAID
   OVERDUE
 }
 
+enum ExploreResourceType {
+  ARTICLE
+  PAPER
+  TUTORIAL
+  VIDEO
+  BOOK
+}
+
 model ExploreResource {
-  id          String            @id @default(uuid())
-  title       String
-  url         String?
-  summary     String?
-  key_points  String[]
-  content     String?
-  topic       String?
-  industry    String?
-  skill       String?
-  created_at  DateTime          @default(now())
-  updated_at  DateTime          @updatedAt
-  
+  id            String              @id @default(uuid())
+  title         String
+  url           String?
+  content       String?
+  type          ExploreResourceType @default(ARTICLE)
+  topic         String?
+  industry_id   String?
+  industry      Industry?           @relation(fields: [industry_id], references: [id], onDelete: SetNull)
+  ai_summary    String?
+  ai_key_points Json?               @default("[]")
+  tags          String[]
+  is_read       Boolean             @default(false)
+  created_at    DateTime            @default(now())
+  updated_at    DateTime            @updatedAt
+
   // Relations
-  bookmarks   ExploreBookmark[]
+  bookmarks ExploreBookmark[]
+
+  @@map("explore_resources")
 }
 
 model ExploreBookmark {
-  id          String          @id @default(uuid())
-  user_id     String
-  user        User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  resource_id String
-  resource    ExploreResource @relation(fields: [resource_id], references: [id], onDelete: Cascade)
-  notes       String?
-  created_at  DateTime        @default(now())
+  id             String          @id @default(uuid())
+  resource_id    String
+  resource       ExploreResource @relation(fields: [resource_id], references: [id], onDelete: Cascade)
+  user_id        String
+  user           User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  highlight_text String?
+  note           String?
+  created_at     DateTime        @default(now())
+
+  @@map("explore_bookmarks")
 }
 
 model DashboardAccount {
-  id             String    @id @default(uuid())
+  id             String   @id @default(uuid())
   name           String
   provider       String
   metrics        Json
-  last_synced_at DateTime  @default(now())
-  created_at     DateTime  @default(now())
-  updated_at     DateTime  @updatedAt
+  last_synced_at DateTime @default(now())
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 }
 
 model ChatMessage {
-  id           String      @id @default(uuid())
-  context_type String      // "IDEA" or "CONTENT"
-  context_id   String?     // Nullable for draft discussions
-  role         String      // "USER" or "AI"
+  id           String   @id @default(uuid())
+  context_type String // "IDEA" or "CONTENT"
+  context_id   String? // Nullable for draft discussions
+  role         String // "USER" or "AI"
   content      String
   model_used   String
   images       String[]
-  created_at   DateTime    @default(now())
+  created_at   DateTime @default(now())
 
   @@map("chat_messages")
+}
+
+model TeamChannel {
+  id         String   @id @default(uuid())
+  name       String   @unique
+  created_by String
+  creator    User     @relation("CreatedTeamChannels", fields: [created_by], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  members  ChannelMember[]
+  messages TeamMessage[]
+
+  @@map("team_channels")
+}
+
+model ChannelMember {
+  id           String      @id @default(uuid())
+  channel_id   String
+  channel      TeamChannel @relation(fields: [channel_id], references: [id], onDelete: Cascade)
+  user_id      String
+  user         User        @relation("TeamChannelMemberships", fields: [user_id], references: [id], onDelete: Cascade)
+  last_read_at DateTime    @default(now())
+  joined_at    DateTime    @default(now())
+
+  @@unique([channel_id, user_id])
+  @@map("channel_members")
+}
+
+model TeamMessage {
+  id         String      @id @default(uuid())
+  channel_id String
+  channel    TeamChannel @relation(fields: [channel_id], references: [id], onDelete: Cascade)
+  sender_id  String
+  sender     User        @relation("SentTeamMessages", fields: [sender_id], references: [id])
+  content    String      @db.VarChar(5000)
+  images     String[]
+  created_at DateTime    @default(now())
+
+  @@index([channel_id, created_at])
+  @@map("team_messages")
 }

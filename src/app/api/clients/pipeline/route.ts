@@ -24,6 +24,14 @@ export async function GET(req: NextRequest) {
         connected_whatsapp: true,
         last_communication_at: true,
         created_at: true,
+        industry_id: true,
+        industry: {
+          select: {
+            id: true,
+            name: true,
+            icon: true,
+          },
+        },
       },
       orderBy: { created_at: 'desc' },
     });

@@ -1,5 +1,6 @@
 import { prisma } from '../db/prisma';
 import { SentimentType, InsightType } from '@prisma/client';
+import { getAccessToken, fetchWithRetry } from './chat';
 
 const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || '';
 const GCP_LOCATION = process.env.GCP_LOCATION || 'us-central1';
@@ -78,49 +79,21 @@ function generateMockInsight(
  * Falls back to mock if GCP not configured.
  */
 async function callVertexAI(prompt: string): Promise<InsightResult | null> {
-  if (!GCP_PROJECT_ID) {
+  const accessToken = await getAccessToken();
+  const hasGoogleAiKey = process.env.GOOGLE_AI_API_KEY && process.env.GOOGLE_AI_API_KEY !== 'mock-google-ai-key';
+
+  if (!accessToken && !hasGoogleAiKey) {
+    throw new Error("AI not configured. Set GOOGLE_APPLICATION_CREDENTIALS (service account key path) in .env");
+  }
+
+  if (!GCP_PROJECT_ID || !accessToken) {
     return null;
   }
 
   try {
-    // Use Vertex AI REST API with Application Default Credentials
-    // The access token is fetched from the GCP metadata server when running on GCP
-    const metaRes = await fetch(
-      'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',
-      { headers: { 'Metadata-Flavor': 'Google' }, signal: AbortSignal.timeout(3000) }
-    ).catch(() => null);
+    const endpoint = `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/gemini-2.5-flash:generateContent`;
 
-    let accessToken: string | null = null;
-
-    if (metaRes?.ok) {
-      const tokenData = await metaRes.json();
-      accessToken = tokenData.access_token;
-    } else {
-      // Try GOOGLE_APPLICATION_CREDENTIALS env via gcloud SDK token endpoint
-      const sdkTokenRes = await fetch(
-        `https://oauth2.googleapis.com/token`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-            assertion: process.env.GCP_SA_KEY_JSON || '',
-          }),
-          signal: AbortSignal.timeout(5000),
-        }
-      ).catch(() => null);
-
-      if (sdkTokenRes?.ok) {
-        const tokenData = await sdkTokenRes.json();
-        accessToken = tokenData.access_token;
-      }
-    }
-
-    if (!accessToken) return null;
-
-    const endpoint = `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/gemini-1.5-pro:generateContent`;
-
-    const res = await fetch(endpoint, {
+    const res = await fetchWithRetry(endpoint, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -138,8 +111,9 @@ async function callVertexAI(prompt: string): Promise<InsightResult | null> {
     });
 
     if (!res.ok) {
-      console.warn('Vertex AI call failed:', await res.text());
-      return null;
+      const errText = await res.text();
+      console.warn('Vertex AI call failed:', errText);
+      throw new Error(`Vertex AI API error: ${errText}`);
     }
 
     const data = await res.json();
@@ -152,6 +126,9 @@ async function callVertexAI(prompt: string): Promise<InsightResult | null> {
     }
     return parsed;
   } catch (error) {
+    if (error instanceof Error && error.message.includes("AI is busy")) {
+      throw error;
+    }
     console.error('callVertexAI error:', error);
     return null;
   }

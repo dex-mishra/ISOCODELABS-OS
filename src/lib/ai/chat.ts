@@ -1,4 +1,5 @@
 import { IdeaCategory, ContentType } from '@prisma/client';
+import { getModelEndpoint, DEFAULT_MODEL_ID } from './models';
 
 const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || '';
 const GCP_LOCATION = process.env.GCP_LOCATION || 'us-central1';
@@ -23,15 +24,81 @@ export interface ExtractedContent {
   outline: string[];
 }
 
+let cachedToken: string | null = null;
+let tokenExpiry = 0;
+
+/**
+ * Helper to fetch with exponential backoff for 429 rate limit errors.
+ * On 429: wait 2 seconds, retry. If still 429, wait 4 seconds, retry once more. Max 3 attempts.
+ * If all retries fail, throws Error with a specific rate limit message.
+ */
+export async function fetchWithRetry(url: string, options: RequestInit, maxAttempts = 3): Promise<Response> {
+  let attempt = 0;
+  while (attempt < maxAttempts) {
+    attempt++;
+    try {
+      const res = await fetch(url, options);
+      if (res.status === 429) {
+        if (attempt >= maxAttempts) {
+          throw new Error("AI is busy (rate limited). Please wait a moment and try again.");
+        }
+        const delay = attempt === 1 ? 2000 : 4000;
+        console.warn(`Got 429 rate limit error. Retrying in ${delay}ms (attempt ${attempt}/${maxAttempts})...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      return res;
+    } catch (e) {
+      if (e instanceof Error && e.message === "AI is busy (rate limited). Please wait a moment and try again.") {
+        throw e;
+      }
+      if (attempt >= maxAttempts) {
+        throw e;
+      }
+      throw e;
+    }
+  }
+  throw new Error("AI is busy (rate limited). Please wait a moment and try again.");
+}
+
+
 /**
  * Access token fetcher for GCP Vertex AI API.
  */
-async function getAccessToken(): Promise<string | null> {
+export async function getAccessToken(): Promise<string | null> {
   if (process.env.VERTEX_AI_STATUS === 'unavailable') {
     return null;
   }
 
-  // Try metadata server (on GCP)
+  // 1. Try GOOGLE_APPLICATION_CREDENTIALS file (works locally + deployed)
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    try {
+      if (cachedToken && Date.now() < tokenExpiry) {
+        return cachedToken;
+      }
+
+      const fs = require('fs');
+      if (fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
+        const { GoogleAuth } = require('google-auth-library');
+        const auth = new GoogleAuth({
+          keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+          scopes: ['https://www.googleapis.com/auth/cloud-platform']
+        });
+        const client = await auth.getClient();
+        const tokenResponse = await client.getAccessToken();
+        if (tokenResponse.token) {
+          cachedToken = tokenResponse.token;
+          // Set expiry 55 minutes from now to ensure buffer
+          tokenExpiry = Date.now() + 55 * 60 * 1000;
+          return tokenResponse.token;
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching token using GOOGLE_APPLICATION_CREDENTIALS:', err);
+    }
+  }
+
+  // 2. Try metadata server (on GCP)
   const metaRes = await fetch(
     'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',
     { headers: { 'Metadata-Flavor': 'Google' }, signal: AbortSignal.timeout(2000) }
@@ -42,9 +109,9 @@ async function getAccessToken(): Promise<string | null> {
     return tokenData.access_token;
   }
 
-  // Try SA key JSON from env
+  // 3. Try SA key JSON from env (fallback / legacy)
   if (process.env.GCP_SA_KEY_JSON) {
-    const sdkTokenRes = await fetch(
+    const sdkTokenRes = await fetchWithRetry(
       `https://oauth2.googleapis.com/token`,
       {
         method: 'POST',
@@ -112,52 +179,40 @@ async function getBase64Image(src: string): Promise<{ mimeType: string; data: st
 export async function sendChatMessage(
   history: ChatMessageInput[],
   newMessage: string,
-  model: 'gemini-pro' | 'gemini-1.5-flash' = 'gemini-pro',
+  model: string = DEFAULT_MODEL_ID,
   images: string[] = []
 ): Promise<string> {
   if (process.env.VERTEX_AI_STATUS === 'unavailable') {
     throw new Error('Vertex AI Service is currently unavailable.');
   }
 
-  // Model name mapping
-  const targetModel = model === 'gemini-1.5-flash' ? 'gemini-1.5-flash' : 'gemini-1.5-pro';
+  // Resolve model — legacy values map to default
+  const resolvedModelId = (model === 'gemini-pro' || model === 'gemini-1.5-flash') ? DEFAULT_MODEL_ID : (model || DEFAULT_MODEL_ID);
 
-  if (GCP_PROJECT_ID) {
+  const accessToken = await getAccessToken();
+  const hasGoogleAiKey = process.env.GOOGLE_AI_API_KEY && process.env.GOOGLE_AI_API_KEY !== 'mock-google-ai-key';
+
+  if (!accessToken && !hasGoogleAiKey) {
+    throw new Error("AI not configured. Set GOOGLE_APPLICATION_CREDENTIALS (service account key path) in .env");
+  }
+
+  if (GCP_PROJECT_ID && accessToken) {
     try {
-      const accessToken = await getAccessToken();
-      if (accessToken) {
-        const endpoint = `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/${targetModel}:generateContent`;
+      // Claude models use a different request/response format — currently disabled (paid)
 
-        // Format history
-        const contents = [];
-        for (const msg of history) {
-          const role = msg.role === 'USER' || msg.role === 'user' ? 'user' : 'model';
-          const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [{ text: msg.content }];
-          
-          if (msg.images && msg.images.length > 0) {
-            for (const img of msg.images) {
-              const b64Data = await getBase64Image(img);
-              if (b64Data) {
-                parts.push({
-                  inlineData: {
-                    mimeType: b64Data.mimeType,
-                    data: b64Data.data,
-                  },
-                });
-              }
-            }
-          }
+      const endpoint = getModelEndpoint(resolvedModelId, GCP_PROJECT_ID, GCP_LOCATION) + ':streamGenerateContent?alt=sse';
 
-          contents.push({ role, parts });
-        }
-
-        // Add the new message
-        const newParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [{ text: newMessage }];
-        if (images.length > 0) {
-          for (const img of images) {
+      // Format history
+      const contents = [];
+      for (const msg of history) {
+        const role = msg.role === 'USER' || msg.role === 'user' ? 'user' : 'model';
+        const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [{ text: msg.content }];
+        
+        if (msg.images && msg.images.length > 0) {
+          for (const img of msg.images) {
             const b64Data = await getBase64Image(img);
             if (b64Data) {
-              newParts.push({
+              parts.push({
                 inlineData: {
                   mimeType: b64Data.mimeType,
                   data: b64Data.data,
@@ -166,36 +221,75 @@ export async function sendChatMessage(
             }
           }
         }
-        contents.push({ role: 'user', parts: newParts });
 
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents,
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 2048,
-            },
-          }),
-          signal: AbortSignal.timeout(30000),
-        });
+        contents.push({ role, parts });
+      }
 
-        if (res.ok) {
-          const data = await res.json();
-          return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        } else {
-          console.warn('Vertex AI Chat failed response:', await res.text());
+      // Add the new message
+      const newParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [{ text: newMessage }];
+      if (images.length > 0) {
+        for (const img of images) {
+          const b64Data = await getBase64Image(img);
+          if (b64Data) {
+            newParts.push({
+              inlineData: {
+                mimeType: b64Data.mimeType,
+                data: b64Data.data,
+              },
+            });
+          }
         }
+      }
+      contents.push({ role: 'user', parts: newParts });
+
+      const res = await fetchWithRetry(endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: "You are a co-founder advisor for Isocodelabs. Be concise, actionable, and direct. Under 150 words per reply. Ask clarifying questions when vague." }]
+          },
+          contents,
+          generationConfig: {
+            temperature: 0.6,
+            maxOutputTokens: 512,
+          },
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+
+      if (res.ok) {
+        // Parse SSE stream and collect all text chunks
+        const text = await res.text();
+        const lines = text.split('\n');
+        let fullResponse = '';
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === '[DONE]') break;
+            try {
+              const chunk = JSON.parse(jsonStr);
+              const part = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (part) fullResponse += part;
+            } catch {
+              // skip malformed chunks
+            }
+          }
+        }
+        
+        return fullResponse || '';
+      } else {
+        const errText = await res.text();
+        console.warn('Vertex AI Chat failed response:', errText);
+        throw new Error(`Vertex AI API error: ${errText}`);
       }
     } catch (e) {
       console.error('Error in sendChatMessage:', e);
-      if (e instanceof Error && e.message && e.message.includes('Vertex AI')) {
-        throw e;
-      }
+      throw e;
     }
   }
 
@@ -255,6 +349,13 @@ export async function extractIdeaFromConversation(history: ChatMessageInput[]): 
     throw new Error('Vertex AI Service is currently unavailable.');
   }
 
+  const accessToken = await getAccessToken();
+  const hasGoogleAiKey = process.env.GOOGLE_AI_API_KEY && process.env.GOOGLE_AI_API_KEY !== 'mock-google-ai-key';
+
+  if (!accessToken && !hasGoogleAiKey) {
+    throw new Error("AI not configured. Set GOOGLE_APPLICATION_CREDENTIALS (service account key path) in .env");
+  }
+
   const chatTranscript = history
     .map((m) => `${m.role === 'USER' || m.role === 'user' ? 'User' : 'AI'}: ${m.content}`)
     .join('\n\n');
@@ -271,36 +372,38 @@ Extract the core details and return them in a strict JSON format:
 }
 Respond ONLY with this JSON. No extra text or markdown formatting.`;
 
-  if (GCP_PROJECT_ID) {
+  if (GCP_PROJECT_ID && accessToken) {
     try {
-      const accessToken = await getAccessToken();
-      if (accessToken) {
-        const endpoint = `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/gemini-1.5-pro:generateContent`;
+      const endpoint = `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/gemini-2.5-flash:generateContent`;
 
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
+      const res = await fetchWithRetry(endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+            maxOutputTokens: 1500,
           },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: {
-              responseMimeType: 'application/json',
-              temperature: 0.2,
-              maxOutputTokens: 1500,
-            },
-          }),
-        });
+        }),
+      });
 
-        if (res.ok) {
-          const data = await res.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          return JSON.parse(text) as ExtractedIdea;
-        }
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return JSON.parse(text) as ExtractedIdea;
+      } else {
+        const errText = await res.text();
+        console.warn('Vertex AI Extract Idea failed response:', errText);
+        throw new Error(`Vertex AI API error: ${errText}`);
       }
     } catch (e) {
       console.error('Failed to extract idea using Gemini:', e);
+      throw e;
     }
   }
 
@@ -335,6 +438,13 @@ export async function extractContentFromConversation(history: ChatMessageInput[]
     throw new Error('Vertex AI Service is currently unavailable.');
   }
 
+  const accessToken = await getAccessToken();
+  const hasGoogleAiKey = process.env.GOOGLE_AI_API_KEY && process.env.GOOGLE_AI_API_KEY !== 'mock-google-ai-key';
+
+  if (!accessToken && !hasGoogleAiKey) {
+    throw new Error("AI not configured. Set GOOGLE_APPLICATION_CREDENTIALS (service account key path) in .env");
+  }
+
   const chatTranscript = history
     .map((m) => `${m.role === 'USER' || m.role === 'user' ? 'User' : 'AI'}: ${m.content}`)
     .join('\n\n');
@@ -351,36 +461,38 @@ Extract the core content details and return them in a strict JSON format:
 }
 Respond ONLY with this JSON. No extra text or markdown formatting.`;
 
-  if (GCP_PROJECT_ID) {
+  if (GCP_PROJECT_ID && accessToken) {
     try {
-      const accessToken = await getAccessToken();
-      if (accessToken) {
-        const endpoint = `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/gemini-1.5-pro:generateContent`;
+      const endpoint = `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/gemini-2.5-flash:generateContent`;
 
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
+      const res = await fetchWithRetry(endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+            maxOutputTokens: 2000,
           },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: {
-              responseMimeType: 'application/json',
-              temperature: 0.2,
-              maxOutputTokens: 2000,
-            },
-          }),
-        });
+        }),
+      });
 
-        if (res.ok) {
-          const data = await res.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          return JSON.parse(text) as ExtractedContent;
-        }
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return JSON.parse(text) as ExtractedContent;
+      } else {
+        const errText = await res.text();
+        console.warn('Vertex AI Extract Content failed response:', errText);
+        throw new Error(`Vertex AI API error: ${errText}`);
       }
     } catch (e) {
       console.error('Failed to extract content using Gemini:', e);
+      throw e;
     }
   }
 
@@ -409,3 +521,180 @@ function lowerContains(text: string, matches: string[]): boolean {
   const lower = text.toLowerCase();
   return matches.some((m) => lower.includes(m));
 }
+
+/**
+ * 4. Stream AI response word-by-word
+ */
+export async function streamChatMessage(
+  history: ChatMessageInput[],
+  newMessage: string,
+  model: string = DEFAULT_MODEL_ID,
+  images: string[] = []
+): Promise<ReadableStream<string>> {
+  if (process.env.VERTEX_AI_STATUS === 'unavailable') {
+    throw new Error('Vertex AI Service is currently unavailable.');
+  }
+
+  // Resolve model — legacy values map to default
+  const resolvedModelId = (model === 'gemini-pro' || model === 'gemini-1.5-flash') ? DEFAULT_MODEL_ID : (model || DEFAULT_MODEL_ID);
+  const accessToken = await getAccessToken();
+  const hasGoogleAiKey = process.env.GOOGLE_AI_API_KEY && process.env.GOOGLE_AI_API_KEY !== 'mock-google-ai-key';
+
+  if (!accessToken && !hasGoogleAiKey) {
+    throw new Error("AI not configured. Set GOOGLE_APPLICATION_CREDENTIALS (service account key path) in .env");
+  }
+
+  if (GCP_PROJECT_ID && accessToken) {
+    // Claude models are disabled (paid) — all models route through Gemini format
+
+    const endpoint = getModelEndpoint(resolvedModelId, GCP_PROJECT_ID, GCP_LOCATION) + ':streamGenerateContent';
+
+    const contents = [];
+    for (const msg of history) {
+      const role = msg.role === 'USER' || msg.role === 'user' ? 'user' : 'model';
+      const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [{ text: msg.content }];
+      if (msg.images && msg.images.length > 0) {
+        for (const img of msg.images) {
+          const b64Data = await getBase64Image(img);
+          if (b64Data) {
+            parts.push({ inlineData: { mimeType: b64Data.mimeType, data: b64Data.data } });
+          }
+        }
+      }
+      contents.push({ role, parts });
+    }
+
+    const newParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [{ text: newMessage }];
+    if (images.length > 0) {
+      for (const img of images) {
+        const b64Data = await getBase64Image(img);
+        if (b64Data) {
+          newParts.push({ inlineData: { mimeType: b64Data.mimeType, data: b64Data.data } });
+        }
+      }
+    }
+    contents.push({ role: 'user', parts: newParts });
+
+    const res = await fetchWithRetry(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2048,
+        },
+      }),
+      signal: AbortSignal.timeout(60000),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn('Vertex AI Stream failed response:', errText);
+      throw new Error(`Vertex AI API error: ${errText}`);
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) {
+      throw new Error("Response body is not readable.");
+    }
+
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+
+    return new ReadableStream<string>({
+      async pull(controller) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            controller.close();
+            break;
+          }
+          buffer += decoder.decode(value, { stream: true });
+
+          let braceCount = 0;
+          let inString = false;
+          let escapeNext = false;
+          let startIdx = -1;
+
+          for (let i = 0; i < buffer.length; i++) {
+            const char = buffer[i];
+            if (escapeNext) {
+              escapeNext = false;
+              continue;
+            }
+            if (char === '\\') {
+              escapeNext = true;
+              continue;
+            }
+            if (char === '"') {
+              inString = !inString;
+              continue;
+            }
+            if (!inString) {
+              if (char === '{') {
+                if (braceCount === 0) {
+                  startIdx = i;
+                }
+                braceCount++;
+              } else if (char === '}') {
+                braceCount--;
+                if (braceCount === 0 && startIdx !== -1) {
+                  const jsonStr = buffer.slice(startIdx, i + 1);
+                  try {
+                    const parsed = JSON.parse(jsonStr);
+                    const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    if (text) {
+                      controller.enqueue(text);
+                    }
+                  } catch (e) {
+                    console.warn('Failed to parse json chunk inside stream:', e);
+                  }
+                  buffer = buffer.slice(i + 1);
+                  i = -1;
+                  startIdx = -1;
+                }
+              }
+            }
+          }
+        }
+      },
+      cancel() {
+        reader.releaseLock();
+      }
+    });
+  }
+
+  // Fallback Mock Stream
+  let interval: NodeJS.Timeout;
+  return new ReadableStream<string>({
+    start(controller) {
+      let mockReply = `Interesting concept! Let's explore this further. (Streaming mock response)`;
+      const lowerMsg = newMessage.toLowerCase();
+      if (images.length > 0) {
+        mockReply = `I see you've attached ${images.length} image(s). Based on these visuals, they look like wireframes or layouts. (Streaming mock response)`;
+      } else if (lowerMsg.includes('youtube script') || lowerMsg.includes('write me a script')) {
+        mockReply = `### YouTube Video Script: Rebuilding Ops Hubs with AI\n\n**[Visual Hook]**: Kanbans moving. (Streaming mock response)`;
+      }
+      
+      const words = mockReply.split(' ');
+      let idx = 0;
+      interval = setInterval(() => {
+        if (idx < words.length) {
+          controller.enqueue(words[idx] + (idx === words.length - 1 ? '' : ' '));
+          idx++;
+        } else {
+          clearInterval(interval);
+          controller.close();
+        }
+      }, 60);
+    },
+    cancel() {
+      if (interval) clearInterval(interval);
+    }
+  });
+}
+

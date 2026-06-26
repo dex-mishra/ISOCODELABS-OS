@@ -54,9 +54,9 @@ export default function TiptapEditor({ content, onChange, placeholder = 'Write s
   }
 
   return (
-    <div className="flex flex-col border border-sf-border-light dark:border-sf-border-dark rounded-lg overflow-hidden bg-white dark:bg-sf-bg-dark">
+    <div className="flex flex-col border border-sf-border-light dark:border-zinc-800 rounded-lg overflow-hidden bg-white dark:bg-zinc-900">
       {/* TOOLBAR */}
-      <div className="flex flex-wrap items-center gap-1 p-2 border-b border-sf-border-light dark:border-sf-border-dark bg-sf-bg-light dark:bg-sf-bg-elevatedDark sticky top-0 z-10">
+      <div className="flex flex-wrap items-center gap-1 p-2 border-b border-sf-border-light dark:border-zinc-800 bg-sf-bg-light dark:bg-zinc-950 sticky top-0 z-10">
         <select
           value={
             editor.isActive('heading', { level: 1 })
@@ -74,23 +74,23 @@ export default function TiptapEditor({ content, onChange, placeholder = 'Write s
             else if (val === 'h2') editor.chain().focus().toggleHeading({ level: 2 }).run();
             else if (val === 'h3') editor.chain().focus().toggleHeading({ level: 3 }).run();
           }}
-          className="bg-transparent text-sm font-medium border border-sf-border-light dark:border-sf-border-dark rounded px-2 py-1 focus:outline-none text-sf-text-light dark:text-sf-text-dark"
+          className="bg-transparent text-sm font-medium border border-sf-border-light dark:border-zinc-800 rounded px-2 py-1 focus:outline-none text-sf-text-light dark:text-zinc-200"
         >
-          <option value="p" className="bg-sf-bg-light dark:bg-sf-bg-dark">Paragraph</option>
-          <option value="h1" className="bg-sf-bg-light dark:bg-sf-bg-dark">Heading 1</option>
-          <option value="h2" className="bg-sf-bg-light dark:bg-sf-bg-dark">Heading 2</option>
-          <option value="h3" className="bg-sf-bg-light dark:bg-sf-bg-dark">Heading 3</option>
+          <option value="p" className="bg-white dark:bg-zinc-900 text-black dark:text-white">Paragraph</option>
+          <option value="h1" className="bg-white dark:bg-zinc-900 text-black dark:text-white">Heading 1</option>
+          <option value="h2" className="bg-white dark:bg-zinc-900 text-black dark:text-white">Heading 2</option>
+          <option value="h3" className="bg-white dark:bg-zinc-900 text-black dark:text-white">Heading 3</option>
         </select>
 
-        <div className="w-px h-6 bg-sf-border-light dark:bg-sf-border-dark mx-1" />
+        <div className="w-px h-6 bg-sf-border-light dark:bg-zinc-800 mx-1" />
 
         <button
           onClick={() => editor.chain().focus().toggleBold().run()}
           disabled={!editor.can().chain().focus().toggleBold().run()}
           className={`p-1.5 rounded transition ${
             editor.isActive('bold')
-              ? 'bg-sf-border-light dark:bg-sf-border-dark text-apple-blue'
-              : 'hover:bg-sf-border-light/50 dark:hover:bg-sf-border-dark/50 text-sf-text-secondaryLight dark:text-sf-text-secondaryDark'
+              ? 'bg-sf-border-light dark:bg-zinc-800 text-apple-blue'
+              : 'hover:bg-sf-border-light/50 dark:hover:bg-zinc-800/50 text-sf-text-secondaryLight dark:text-zinc-400'
           }`}
           title="Bold"
         >
@@ -102,8 +102,8 @@ export default function TiptapEditor({ content, onChange, placeholder = 'Write s
           disabled={!editor.can().chain().focus().toggleItalic().run()}
           className={`p-1.5 rounded transition ${
             editor.isActive('italic')
-              ? 'bg-sf-border-light dark:bg-sf-border-dark text-apple-blue'
-              : 'hover:bg-sf-border-light/50 dark:hover:bg-sf-border-dark/50 text-sf-text-secondaryLight dark:text-sf-text-secondaryDark'
+              ? 'bg-sf-border-light dark:bg-zinc-800 text-apple-blue'
+              : 'hover:bg-sf-border-light/50 dark:hover:bg-zinc-800/50 text-sf-text-secondaryLight dark:text-zinc-400'
           }`}
           title="Italic"
         >
@@ -115,8 +115,8 @@ export default function TiptapEditor({ content, onChange, placeholder = 'Write s
           disabled={!editor.can().chain().focus().toggleStrike().run()}
           className={`p-1.5 rounded transition ${
             editor.isActive('strike')
-              ? 'bg-sf-border-light dark:bg-sf-border-dark text-apple-blue'
-              : 'hover:bg-sf-border-light/50 dark:hover:bg-sf-border-dark/50 text-sf-text-secondaryLight dark:text-sf-text-secondaryDark'
+              ? 'bg-sf-border-light dark:bg-zinc-800 text-apple-blue'
+              : 'hover:bg-sf-border-light/50 dark:hover:bg-zinc-800/50 text-sf-text-secondaryLight dark:text-zinc-400'
           }`}
           title="Strikethrough"
         >
@@ -128,22 +128,22 @@ export default function TiptapEditor({ content, onChange, placeholder = 'Write s
           disabled={!editor.can().chain().focus().toggleCode().run()}
           className={`p-1.5 rounded transition ${
             editor.isActive('code')
-              ? 'bg-sf-border-light dark:bg-sf-border-dark text-apple-blue'
-              : 'hover:bg-sf-border-light/50 dark:hover:bg-sf-border-dark/50 text-sf-text-secondaryLight dark:text-sf-text-secondaryDark'
+              ? 'bg-sf-border-light dark:bg-zinc-800 text-apple-blue'
+              : 'hover:bg-sf-border-light/50 dark:hover:bg-zinc-800/50 text-sf-text-secondaryLight dark:text-zinc-400'
           }`}
           title="Code Inline"
         >
           <Code className="w-4 h-4" />
         </button>
 
-        <div className="w-px h-6 bg-sf-border-light dark:bg-sf-border-dark mx-1" />
+        <div className="w-px h-6 bg-sf-border-light dark:bg-zinc-800 mx-1" />
 
         <button
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={`p-1.5 rounded transition ${
             editor.isActive('bulletList')
-              ? 'bg-sf-border-light dark:bg-sf-border-dark text-apple-blue'
-              : 'hover:bg-sf-border-light/50 dark:hover:bg-sf-border-dark/50 text-sf-text-secondaryLight dark:text-sf-text-secondaryDark'
+              ? 'bg-sf-border-light dark:bg-zinc-800 text-apple-blue'
+              : 'hover:bg-sf-border-light/50 dark:hover:bg-zinc-800/50 text-sf-text-secondaryLight dark:text-zinc-400'
           }`}
           title="Bullet List"
         >
@@ -154,8 +154,8 @@ export default function TiptapEditor({ content, onChange, placeholder = 'Write s
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           className={`p-1.5 rounded transition ${
             editor.isActive('orderedList')
-              ? 'bg-sf-border-light dark:bg-sf-border-dark text-apple-blue'
-              : 'hover:bg-sf-border-light/50 dark:hover:bg-sf-border-dark/50 text-sf-text-secondaryLight dark:text-sf-text-secondaryDark'
+              ? 'bg-sf-border-light dark:bg-zinc-800 text-apple-blue'
+              : 'hover:bg-sf-border-light/50 dark:hover:bg-zinc-800/50 text-sf-text-secondaryLight dark:text-zinc-400'
           }`}
           title="Ordered List"
         >
@@ -163,7 +163,7 @@ export default function TiptapEditor({ content, onChange, placeholder = 'Write s
         </button>
       </div>
 
-      <div className="p-6 overflow-y-auto max-h-[600px] bg-white dark:bg-sf-bg-dark">
+      <div className="p-6 overflow-y-auto max-h-[600px] bg-white dark:bg-zinc-900">
         <EditorContent editor={editor} />
       </div>
     </div>

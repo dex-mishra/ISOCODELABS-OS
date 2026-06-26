@@ -11,6 +11,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 
+    const userExists = await prisma.user.findUnique({ where: { id: user.id } });
+    if (!userExists) {
+      return NextResponse.json({ error: 'Session expired. Please log in again.' }, { status: 401 });
+    }
+
     // Fetch all folders
     const folders = await prisma.workspaceFolder.findMany({
       include: {
@@ -77,6 +82,11 @@ export async function POST(req: NextRequest) {
     const user = requireAuth(req);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+    }
+
+    const userExists = await prisma.user.findUnique({ where: { id: user.id } });
+    if (!userExists) {
+      return NextResponse.json({ error: 'Session expired. Please log in again.' }, { status: 401 });
     }
 
     const { name, parent_id, icon } = await req.json();

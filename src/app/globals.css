@@ -53,3 +53,8 @@ body, div, nav, aside, header, main, footer, input, select, textarea, button, p,
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+.overflow-safe {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

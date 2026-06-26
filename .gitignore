@@ -29,8 +29,19 @@ yarn-error.log*
 .env
 .env*.local
 
+# GCP service account & secrets (NEVER commit these)
+gcp-service-account.json
+*-service-account.json
+*.serviceaccount.json
+service-account*.json
+credentials.json
+*.key
+
 # vercel
 .vercel
+
+# uploaded files
+/public/uploads/avatars/
 
 # typescript
 *.tsbuildinfo

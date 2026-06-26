@@ -6,6 +6,8 @@ import { RealtimeProvider } from '@/contexts/RealtimeContext';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import AIChatGlobal from '@/components/modules/AIChatGlobal';
+import QuickIdeaCapture from '@/components/modules/QuickIdeaCapture';
+import FloatingTeamChat from '@/components/modules/FloatingTeamChat';
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -39,6 +41,8 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
     <DashboardLayout>
       {children}
       <AIChatGlobal />
+      <QuickIdeaCapture />
+      <FloatingTeamChat />
     </DashboardLayout>
   );
 }

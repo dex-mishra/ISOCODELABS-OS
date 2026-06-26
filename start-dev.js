@@ -1,23 +1,31 @@
-const { spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+const { spawn, execSync } = require('child_process');
 
-// 1. Delete .next folder to prevent build cache corruption
-const nextDir = path.join(__dirname, '.next');
-if (fs.existsSync(nextDir)) {
-  console.log('🧹 Clearing .next cache directory...');
-  try {
-    fs.rmSync(nextDir, { recursive: true, force: true });
-    console.log('✅ .next directory removed successfully.');
-  } catch (error) {
-    console.error('⚠️ Failed to remove .next directory:', error.message);
-  }
+// Fixed port for consistency (OAuth redirect URIs depend on this)
+const PORT = 3000;
+
+// 1. Kill any process already using the port (prevents Next.js from jumping ports)
+try {
+  const out = execSync(`netstat -ano | findstr :${PORT}`, { encoding: 'utf8' });
+  const pids = new Set();
+  out.split('\n').forEach((line) => {
+    const parts = line.trim().split(/\s+/);
+    const pid = parts[parts.length - 1];
+    if (pid && /^\d+$/.test(pid) && pid !== '0') pids.add(pid);
+  });
+  pids.forEach((pid) => {
+    try {
+      execSync(`taskkill /PID ${pid} /F`);
+      console.log(`🛑 Killed stale process ${pid} on port ${PORT}`);
+    } catch {}
+  });
+} catch {
+  // No process on the port — good
 }
 
-// 2. Spawn Next.js dev server on port 3003
-console.log('🚀 Spawning Next.js dev server: npx next dev -p 3003');
+// 2. Spawn Next.js dev server on the FIXED port
+console.log(`🚀 Starting Next.js dev server on port ${PORT}`);
 
-const nextProcess = spawn('npx', ['next', 'dev', '-p', '3003'], {
+const nextProcess = spawn('npx', ['next', 'dev', '-p', String(PORT)], {
   stdio: 'inherit',
   shell: true,
 });
@@ -25,4 +33,3 @@ const nextProcess = spawn('npx', ['next', 'dev', '-p', '3003'], {
 nextProcess.on('close', (code) => {
   process.exit(code || 0);
 });
-

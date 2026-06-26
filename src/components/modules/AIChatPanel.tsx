@@ -103,7 +103,7 @@ export default function AIChatPanel({
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  const [model, setModel] = useState<'gemini-pro' | 'gemini-1.5-flash'>('gemini-pro');
+  const [model, setModel] = useState('gemini-3.5-flash');
   const [isGenerating, setIsGenerating] = useState(false);
   const [attachedImages, setAttachedImages] = useState<string[]>([]);
   const [showImagePicker, setShowImagePicker] = useState(false);
@@ -141,14 +141,14 @@ export default function AIChatPanel({
   };
 
   const fetchChatHistory = useCallback(async () => {
-    if (!contextId) {
-      setMessages([]);
-      return;
-    }
     try {
-      const res = await authFetch(`/api/ai/chat/${contextType}/${contextId}`);
+      const url = contextId
+        ? `/api/ai/chat/history?context_type=${contextType}&context_id=${contextId}`
+        : `/api/ai/chat/history?context_type=${contextType}`;
+      const res = await authFetch(url);
       if (res.ok) {
-        setMessages(await res.json());
+        const data = await res.json();
+        setMessages(data.messages || []);
       }
     } catch (error) {
       console.error('Failed to load chat history:', error);
@@ -189,6 +189,19 @@ export default function AIChatPanel({
     setShowImagePicker(false);
     setIsGenerating(true);
 
+    const tempUserMsgId = `temp-user-${Date.now()}`;
+    const tempUserMsg: ChatMessage = {
+      id: tempUserMsgId,
+      context_type: contextType,
+      context_id: contextId,
+      role: 'USER',
+      content: currentInputText,
+      model_used: model,
+      images: currentAttachedImages,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, tempUserMsg]);
+
     try {
       // Map history for API
       const conversationHistory = messages.map((m) => ({
@@ -210,32 +223,69 @@ export default function AIChatPanel({
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        // Append user and ai messages
-        setMessages((prev) => [...prev, data.userMessage, data.aiMessage]);
-      } else {
-        const err = await res.json();
-        // Insert artificial error block
+      if (!res.ok) {
+        let errMsg = 'AI Service is currently unavailable. Please verify credentials or simulate offline settings.';
+        try {
+          const err = await res.json();
+          errMsg = err.error || errMsg;
+        } catch {}
         const errMessage: ChatMessage = {
           id: `error-${Date.now()}`,
           context_type: contextType,
           context_id: contextId,
           role: 'AI',
-          content: `⚠️ **Error:** ${err.error || 'AI Service is currently unavailable. Please verify credentials or simulate offline settings.'}`,
+          content: `⚠️ **Error:** ${errMsg}`,
           model_used: model,
           images: [],
           created_at: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, errMessage]);
+        return;
       }
-    } catch {
+
+      const tempAiMsgId = `temp-ai-${Date.now()}`;
+      const tempAiMsg: ChatMessage = {
+        id: tempAiMsgId,
+        context_type: contextType,
+        context_id: contextId,
+        role: 'AI',
+        content: '',
+        model_used: model,
+        images: [],
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, tempAiMsg]);
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        throw new Error('Response body is not readable.');
+      }
+
+      const decoder = new TextDecoder('utf-8');
+      let accumulatedText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+        const chunk = decoder.decode(value, { stream: true });
+        accumulatedText += chunk;
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempAiMsgId ? { ...m, content: accumulatedText } : m))
+        );
+      }
+
+      // Fetch official messages from DB now that save has occurred
+      await fetchChatHistory();
+    } catch (error) {
+      console.error('Error during message sending/streaming:', error);
       const errMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         context_type: contextType,
         context_id: contextId,
         role: 'AI',
-        content: `⚠️ **Error:** Failed to connect to server. Please try again.`,
+        content: `⚠️ **Error:** Failed to connect to server or connection was interrupted. Please try again.`,
         model_used: model,
         images: [],
         created_at: new Date().toISOString(),
@@ -368,6 +418,15 @@ export default function AIChatPanel({
           <span className="text-xs font-bold uppercase tracking-wider text-foreground">
             {contextType === 'IDEA' ? 'Product AI Discuss' : 'Content Brainstorm'}
           </span>
+          {contextId ? (
+            <span className="text-[9px] bg-apple-blue/10 border border-apple-blue/20 text-apple-blue px-1.5 py-0.5 rounded-full font-bold uppercase">
+              Contextual
+            </span>
+          ) : (
+            <span className="text-[9px] bg-neutral-500/10 border border-neutral-500/20 text-sf-text-secondaryLight dark:text-sf-text-secondaryDark px-1.5 py-0.5 rounded-full font-bold uppercase">
+              General
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -378,11 +437,26 @@ export default function AIChatPanel({
             </span>
             <select
               value={model}
-              onChange={(e) => setModel(e.target.value as 'gemini-pro' | 'gemini-1.5-flash')}
+              onChange={(e) => setModel(e.target.value)}
               className="bg-transparent border-0 text-[10px] outline-none font-bold text-apple-blue cursor-pointer focus:ring-0"
             >
-              <option value="gemini-pro">Gemini Pro</option>
-              <option value="gemini-1.5-flash">Gemini Flash</option>
+              <optgroup label="⚡ Fast">
+                <option value="gemini-3.5-flash">Gemini 3.5 Flash (Default)</option>
+                <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
+                <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite</option>
+              </optgroup>
+              <optgroup label="🧠 Advanced">
+                <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (1M ctx)</option>
+                <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+              </optgroup>
+              <optgroup label="🖼️ Image">
+                <option value="gemini-3.1-flash-image">Gemini 3.1 Flash Image</option>
+                <option value="gemini-3-pro-image">Gemini 3 Pro Image</option>
+                <option value="gemini-2.5-flash-image">Gemini 2.5 Flash Image</option>
+              </optgroup>
             </select>
           </div>
 
@@ -399,7 +473,7 @@ export default function AIChatPanel({
       </div>
 
       {/* Messages Feed */}
-      <div ref={feedRef} className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+      <div ref={feedRef} className="flex-1 overflow-y-auto max-h-[550px] lg:max-h-[calc(100vh-280px)] p-4 space-y-4 no-scrollbar">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col justify-center items-center text-center p-6 space-y-3.5">
             <div className="p-4 bg-apple-gray dark:bg-sf-bg-elevatedDark rounded-full text-apple-blue">

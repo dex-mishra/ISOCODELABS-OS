@@ -15,7 +15,8 @@ import {
   X,
   Link as LinkIcon,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  IndianRupee
 } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -67,9 +68,11 @@ interface Project {
   end_date?: string | null;
   budget?: number | null;
   client: Client;
+  industry?: { id: string; name: string } | null;
   creator: User;
   milestones: Milestone[];
   tasks: Task[];
+  transactions?: { id: string; amount: number; type: 'INCOME' | 'EXPENSE'; category: string; date: string; description?: string | null }[];
 }
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
@@ -89,6 +92,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
   const [isLinkTaskModalOpen, setIsLinkTaskModalOpen] = useState(false);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+  const [showTxModal, setShowTxModal] = useState(false);
 
   // Form states
   const [milestoneSubmitting, setMilestoneSubmitting] = useState(false);
@@ -110,6 +114,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
   const [linkingTaskId, setLinkingTaskId] = useState('');
 
+  // Transaction logging states
+  const [txType, setTxType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE');
+  const [txAmount, setTxAmount] = useState('');
+  const [txCategory, setTxCategory] = useState('');
+  const [txDescription, setTxDescription] = useState('');
+  const [txDate, setTxDate] = useState(new Date().toISOString().substring(0, 10));
+  const [submittingTx, setSubmittingTx] = useState(false);
+
   const fetchProjectDetails = useCallback(async () => {
     try {
       setLoading(true);
@@ -127,6 +139,45 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       setLoading(false);
     }
   }, [authFetch, id]);
+
+  const handleLogProjectTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!txAmount || !txCategory) return;
+    setSubmittingTx(true);
+    try {
+      const res = await authFetch('/api/money/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: parseFloat(txAmount),
+          type: txType,
+          category: txCategory,
+          date: new Date(txDate).toISOString(),
+          description: txDescription || `${txType === 'INCOME' ? 'Income' : 'Expense'} for project ${project?.name}`,
+          project_id: id,
+          client_id: project?.client.id || null,
+          industry_id: project?.industry?.id || null,
+        }),
+      });
+
+      if (res.ok) {
+        setTxAmount('');
+        setTxCategory('');
+        setTxDescription('');
+        setTxDate(new Date().toISOString().substring(0, 10));
+        setShowTxModal(false);
+        fetchProjectDetails();
+        alert('Transaction recorded successfully!');
+      } else {
+        alert('Failed to record transaction.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error recording transaction.');
+    } finally {
+      setSubmittingTx(false);
+    }
+  };
 
   const fetchUnlinkedTasks = useCallback(async () => {
     try {
@@ -414,6 +465,11 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold text-white tracking-tight">{project.name}</h1>
             {getStatusBadge(project.status)}
+            {project.industry && (
+              <Badge variant="secondary" className="bg-apple-blue/10 text-apple-blue border-apple-blue/20 font-medium">
+                💼 {project.industry.name}
+              </Badge>
+            )}
           </div>
           <p className="text-xs text-neutral-400">
             Client: <span className="text-neutral-300 font-medium">{project.client.name}</span>
@@ -544,7 +600,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               <div>
                 <span className="text-[10px] text-neutral-500 font-semibold uppercase tracking-wider block">Budget</span>
                 <span className="text-sm font-bold text-white mt-1 block">
-                  {project.budget ? `$${project.budget.toLocaleString()}` : 'No budget'}
+                  {project.budget ? `₹${project.budget.toLocaleString()}` : 'No budget'}
                 </span>
               </div>
               <div>
@@ -569,6 +625,70 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
         {/* Right Column: Linked Tasks Panel */}
         <div className="space-y-6">
+          {/* Project Financials Card */}
+          <Card className="bg-neutral-900/30 border-neutral-850 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-neutral-300">Project Financials</h3>
+              <Badge variant="success">Active Ledger</Badge>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between text-xs border-b border-neutral-850/50 pb-2">
+                <span className="text-neutral-500 font-medium">Budget:</span>
+                <span className="font-semibold text-white">
+                  {project.budget ? `₹${project.budget.toLocaleString()}` : 'No Budget'}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs border-b border-neutral-850/50 pb-2">
+                <span className="text-neutral-500 font-medium">Income Received:</span>
+                <span className="font-semibold text-apple-green">
+                  +₹{(project.transactions?.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + t.amount, 0) || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs border-b border-neutral-850/50 pb-2">
+                <span className="text-neutral-500 font-medium">Expenses Incurred:</span>
+                <span className="font-semibold text-apple-red">
+                  -₹{(project.transactions?.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + t.amount, 0) || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs border-b border-neutral-850/50 pb-2">
+                <span className="text-neutral-500 font-medium">Remaining Margin:</span>
+                <span className={`font-semibold ${
+                  (project.budget || 0) - (project.transactions?.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + t.amount, 0) || 0) >= 0
+                    ? 'text-apple-green'
+                    : 'text-apple-red'
+                }`}>
+                  ₹{((project.budget || 0) - (project.transactions?.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + t.amount, 0) || 0)).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setTxType('INCOME');
+                  setTxCategory('Project Milestone');
+                  setShowTxModal(true);
+                }}
+                className="w-full bg-apple-green hover:bg-apple-green/90 text-white font-bold text-xs py-2 rounded-apple flex items-center justify-center gap-1 shadow-apple-sm transition-all"
+              >
+                + Record Income
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTxType('EXPENSE');
+                  setTxCategory('Freelancer Payment');
+                  setShowTxModal(true);
+                }}
+                className="w-full bg-apple-red hover:bg-apple-red/90 text-white font-bold text-xs py-2 rounded-apple flex items-center justify-center gap-1 shadow-apple-sm transition-all"
+              >
+                - Record Expense
+              </button>
+            </div>
+          </Card>
+
           <Card className="bg-neutral-900/30 border-neutral-850 p-6 h-full flex flex-col justify-between">
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -867,6 +987,110 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   </Button>
                   <Button variant="primary" type="submit" disabled={taskSubmitting}>
                     {taskSubmitting ? 'Creating...' : 'Create Task'}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Log Project Transaction Modal */}
+      <AnimatePresence>
+        {showTxModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.6 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowTxModal(false)}
+              className="fixed inset-0 bg-black"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative z-10 space-y-6"
+            >
+              <div className="flex items-center justify-between border-b border-neutral-850 pb-4">
+                <h3 className="text-lg font-bold text-white">
+                  Record Project {txType === 'INCOME' ? 'Income' : 'Expense'}
+                </h3>
+                <button onClick={() => setShowTxModal(false)} className="text-neutral-500 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleLogProjectTransaction} className="space-y-4">
+                <div>
+                  <label className="text-[11px] text-neutral-500 font-semibold uppercase block mb-1">Amount (₹)</label>
+                  <Input
+                    type="number"
+                    required
+                    step="0.01"
+                    placeholder="0.00"
+                    value={txAmount}
+                    onChange={(e) => setTxAmount(e.target.value)}
+                    className="bg-neutral-950 border-neutral-850 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] text-neutral-500 font-semibold uppercase block mb-1">Category</label>
+                  <select
+                    required
+                    value={txCategory}
+                    onChange={(e) => setTxCategory(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-850 text-xs text-neutral-300 rounded-lg p-2.5 outline-none focus:border-neutral-700"
+                  >
+                    {txType === 'INCOME' ? (
+                      <>
+                        <option value="Project Milestone">Project Milestone</option>
+                        <option value="Monthly Retainer">Monthly Retainer</option>
+                        <option value="Consulting Fee">Consulting Fee</option>
+                        <option value="Other">Other</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="Freelancer Payment">Freelancer Payment</option>
+                        <option value="Software Licensing">Software Licensing</option>
+                        <option value="Travel">Travel</option>
+                        <option value="Advertising">Advertising</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Other">Other</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] text-neutral-500 font-semibold uppercase block mb-1">Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={txDate}
+                    onChange={(e) => setTxDate(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-850 text-xs text-neutral-300 rounded-lg p-2.5 outline-none focus:border-neutral-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] text-neutral-500 font-semibold uppercase block mb-1">Description</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Short description..."
+                    value={txDescription}
+                    onChange={(e) => setTxDescription(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-850 text-sm rounded-lg p-3 text-white outline-none focus:border-neutral-700 resize-none"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-neutral-850">
+                  <Button variant="secondary" type="button" onClick={() => setShowTxModal(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="primary" type="submit" disabled={submittingTx}>
+                    {submittingTx ? 'Recording...' : 'Record Transaction'}
                   </Button>
                 </div>
               </form>

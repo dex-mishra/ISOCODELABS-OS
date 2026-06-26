@@ -127,6 +127,32 @@ export function initSocketServer(io: IOServer) {
       }
     );
 
+    // --- Team Chat Events ---
+    socket.on('team-chat:join', ({ channelId }: { channelId: string }) => {
+      if (!channelId) return;
+      const room = `team-channel:${channelId}`;
+      socket.join(room);
+      console.log(`💬 Socket ${socket.id} joined team-chat room: ${room}`);
+    });
+
+    socket.on('team-chat:leave', ({ channelId }: { channelId: string }) => {
+      if (!channelId) return;
+      const room = `team-channel:${channelId}`;
+      socket.leave(room);
+      console.log(`💬 Socket ${socket.id} left team-chat room: ${room}`);
+    });
+
+    socket.on('team-chat:typing', ({ channelId, isTyping }: { channelId: string; isTyping: boolean }) => {
+      if (!channelId) return;
+      const room = `team-channel:${channelId}`;
+      socket.to(room).emit('team-chat:typing', {
+        channelId,
+        userId: user.id,
+        userName: user.name,
+        isTyping,
+      });
+    });
+
     // --- Legacy / Backward Compatibility Support (Steps 1-8) ---
     socket.on('join-room', (roomName: string) => {
       socket.join(roomName);

@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.env
+.env*.local
+gcp-service-account.json
+*-service-account.json
+npm-debug.log*
+README.md
+walkthrough.md
+task.md
+setup_connection_guide.md
+Updater.html
+prd.txt
+.kiro

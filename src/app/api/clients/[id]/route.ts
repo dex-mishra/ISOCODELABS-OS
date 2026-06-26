@@ -30,6 +30,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
           select: { id: true, name: true, status: true },
           orderBy: { created_at: 'desc' },
         },
+        transactions: {
+          orderBy: { date: 'desc' },
+        },
+        invoices: {
+          orderBy: { issue_date: 'desc' },
+        },
+        industry: {
+          select: { id: true, name: true },
+        },
       },
     });
 
@@ -49,7 +58,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
 
     const body = await req.json();
-    const { name, email, phone, company, pipeline_stage, source, value, notes } = body;
+    const { name, email, phone, company, pipeline_stage, source, value, notes, industry_id } = body;
 
     const client = await prisma.client.update({
       where: { id: params.id },
@@ -62,6 +71,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         ...(source !== undefined && { source }),
         ...(value !== undefined && { value: value ? Number(value) : null }),
         ...(notes !== undefined && { notes }),
+        ...(industry_id !== undefined && { industry_id: industry_id || null }),
       },
     });
 

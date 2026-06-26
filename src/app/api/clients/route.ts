@@ -5,7 +5,7 @@ import { PipelineStage } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/clients — list with filters
+  // GET /api/clients — list with filters
 export async function GET(req: NextRequest) {
   try {
     const user = requireAuth(req);
@@ -15,11 +15,13 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search');
     const stage = searchParams.get('pipeline_stage');
     const source = searchParams.get('source');
+    const industryId = searchParams.get('industry_id');
 
     const clients = await prisma.client.findMany({
       where: {
         ...(stage ? { pipeline_stage: stage as PipelineStage } : {}),
         ...(source ? { source } : {}),
+        ...(industryId ? { industry_id: industryId } : {}),
         ...(search
           ? {
               OR: [
@@ -43,6 +45,8 @@ export async function GET(req: NextRequest) {
         connected_whatsapp: true,
         last_communication_at: true,
         created_at: true,
+        industry_id: true,
+        industry: { select: { id: true, name: true, icon: true, color: true } },
       },
       orderBy: { created_at: 'desc' },
     });
@@ -61,7 +65,7 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
 
     const body = await req.json();
-    const { name, email, phone, company, pipeline_stage, source, value, notes } = body;
+    const { name, email, phone, company, pipeline_stage, source, value, notes, industry_id } = body;
 
     if (!name || !email) {
       return NextResponse.json({ error: 'Name and email are required.' }, { status: 400 });
@@ -77,7 +81,11 @@ export async function POST(req: NextRequest) {
         source: source || null,
         value: value ? Number(value) : null,
         notes: notes || null,
+        industry_id: industry_id || null,
         created_by: user.id,
+      },
+      include: {
+        industry: { select: { id: true, name: true, icon: true, color: true } },
       },
     });
 

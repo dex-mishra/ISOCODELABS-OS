@@ -13,9 +13,11 @@ import {
   TrendingUp,
   CheckCircle2,
   Info,
+  ArrowUpRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import AIChatPanel from '@/components/modules/AIChatPanel';
 
 interface Validation {
@@ -62,10 +64,14 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
 export default function IdeasDashboard() {
   const { authFetch } = useAuth();
   const { socket } = useRealtime();
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<'grid' | 'matrix'>('grid');
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Active contextual idea for chat panel
+  const [activeIdeaId, setActiveIdeaId] = useState<string | null>(null);
 
   // Filters & Sorting state
   const [searchQuery, setSearchQuery] = useState('');
@@ -301,9 +307,14 @@ export default function IdeasDashboard() {
                       key={idea.id}
                       whileHover={{ y: -4 }}
                       transition={{ duration: 0.2 }}
-                      className="bg-card border border-border rounded-apple p-5 flex flex-col justify-between h-[230px] hover:shadow-md hover:border-apple-blue/40 transition-all cursor-pointer relative"
+                      onClick={() => setActiveIdeaId(activeIdeaId === idea.id ? null : idea.id)}
+                      className={`bg-card border rounded-apple p-5 flex flex-col justify-between h-[230px] hover:shadow-md transition-all cursor-pointer relative ${
+                        activeIdeaId === idea.id
+                          ? 'border-apple-blue shadow-sm ring-1 ring-apple-blue/20'
+                          : 'border-border hover:border-apple-blue/40'
+                      }`}
                     >
-                      <Link href={`/ideas/${idea.id}`} className="flex flex-col justify-between h-full">
+                      <div className="flex flex-col justify-between h-full w-full">
                         <div>
                           {/* Tags & Meta Badges */}
                           <div className="flex items-center justify-between gap-2 mb-2.5">
@@ -334,9 +345,7 @@ export default function IdeasDashboard() {
                           <p className="text-xs text-sf-text-secondaryLight dark:text-sf-text-secondaryDark line-clamp-3 mt-1.5 leading-relaxed">
                             {idea.description ? idea.description.replace(/<[^>]*>/g, '') : 'No description provided.'}
                           </p>
-                        </div>
-
-                        {/* Footer: Matrix Indicator & Creator */}
+                        </div>                        {/* Footer: Matrix Indicator & Creator */}
                         <div className="border-t border-border/60 pt-3 flex items-center justify-between mt-auto">
                           <div className="flex items-center gap-4 text-xs font-semibold text-sf-text-secondaryLight dark:text-sf-text-secondaryDark">
                             <span className="flex items-center gap-1">
@@ -349,18 +358,17 @@ export default function IdeasDashboard() {
                             </span>
                           </div>
 
-                          {/* tags */}
-                          {idea.tags.length > 0 && (
-                            <div className="flex gap-1 overflow-hidden max-w-[120px] justify-end truncate">
-                              {idea.tags.slice(0, 2).map((t) => (
-                                <span key={t} className="text-[10px] bg-apple-gray dark:bg-sf-bg-elevatedDark text-sf-text-secondaryLight dark:text-sf-text-secondaryDark px-1.5 py-0.5 rounded-full font-medium">
-                                  {t}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/ideas/${idea.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs font-semibold text-apple-blue hover:underline flex items-center gap-0.5"
+                            >
+                              Analyze <ArrowUpRight size={12} />
+                            </Link>
+                          </div>
                         </div>
-                      </Link>
+                      </div>
                     </motion.div>
                   );
                 })}
@@ -438,9 +446,17 @@ export default function IdeasDashboard() {
                         onMouseLeave={() => setHoveredIdea(null)}
                         className="cursor-pointer"
                       >
-                        <Link href={`/ideas/${idea.id}`}>
+                        <div
+                          onClick={() => setActiveIdeaId(activeIdeaId === idea.id ? null : idea.id)}
+                          onDoubleClick={() => router.push(`/ideas/${idea.id}`)}
+                          className="cursor-pointer"
+                        >
                           <div
-                            className={`w-4 h-4 rounded-full border border-card shadow-sm transition-all duration-300 ${
+                            className={`w-4 h-4 rounded-full border shadow-sm transition-all duration-300 ${
+                              activeIdeaId === idea.id
+                                ? 'border-apple-blue ring-2 ring-apple-blue/30 scale-125 shadow-lg'
+                                : 'border-card'
+                            } ${
                               idea.category === 'PRODUCT'
                                 ? 'bg-indigo-500 shadow-indigo-500/40'
                                 : idea.category === 'FEATURE'
@@ -452,7 +468,7 @@ export default function IdeasDashboard() {
                                 : 'bg-gray-400 shadow-gray-400/40'
                             }`}
                           />
-                        </Link>
+                        </div>
                       </motion.div>
                     );
                   })}
@@ -482,6 +498,9 @@ export default function IdeasDashboard() {
                           AI Score: {Math.round(hoveredIdea.validations[0].confidence * 100)}%
                         </div>
                       )}
+                      <div className="mt-2 border-t border-white/10 pt-1.5 text-[9px] text-apple-blue font-semibold">
+                        Click: Discuss | Double-click: Analyze
+                      </div>
                     </div>
                   )}
                 </div>
@@ -495,7 +514,7 @@ export default function IdeasDashboard() {
       <div className="w-full lg:w-[400px] shrink-0 h-[600px] lg:h-[calc(100vh-140px)] sticky top-[90px]">
         <AIChatPanel
           contextType="IDEA"
-          contextId={null}
+          contextId={activeIdeaId}
           onLogged={() => {
             showToast('Product idea captured successfully!');
             fetchIdeas();

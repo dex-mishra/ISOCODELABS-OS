@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Avatar } from '@/components/ui/Avatar';
 import {
-  Plus, Search, Users, DollarSign, TrendingUp, List, Columns,
-  X, AlertCircle, ChevronRight,
+  Plus, Search, Users, TrendingUp, List, Columns,
+  ChevronRight, ArrowRight, Kanban, CheckCircle, Clock, Trash2, X,
+  Building2, IndianRupee, AlertCircle,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,6 +30,14 @@ interface Client {
   connected_whatsapp: boolean;
   last_communication_at: string | null;
   created_at: string;
+  industry_id: string | null;
+  industry?: { id: string; name: string; icon: string | null } | null;
+}
+
+interface Industry {
+  id: string;
+  name: string;
+  icon: string | null;
 }
 
 type PipelineStage = 'LEAD' | 'CONTACTED' | 'PROPOSAL' | 'NEGOTIATION' | 'ACTIVE' | 'CHURNED';
@@ -64,6 +73,7 @@ export default function ClientsPage() {
     LEAD: [], CONTACTED: [], PROPOSAL: [], NEGOTIATION: [], ACTIVE: [], CHURNED: [],
   });
   const [allClients, setAllClients] = useState<Client[]>([]);
+  const [industries, setIndustries] = useState<Industry[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'pipeline' | 'list'>('pipeline');
   const [search, setSearch] = useState('');
@@ -75,7 +85,7 @@ export default function ClientsPage() {
   const [newClientData, setNewClientData] = useState({
     name: '', email: '', phone: '', company: '',
     pipeline_stage: 'LEAD' as PipelineStage,
-    source: '', value: '',
+    source: '', value: '', industry_id: '',
   });
 
   // Drag state
@@ -86,14 +96,21 @@ export default function ClientsPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const fetchPipeline = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await authFetch('/api/clients/pipeline');
-      if (res.ok) {
-        const data: PipelineBoard = await res.json();
+      const [pipelineRes, industriesRes] = await Promise.all([
+        authFetch('/api/clients/pipeline'),
+        authFetch('/api/industries'),
+      ]);
+
+      if (pipelineRes.ok) {
+        const data: PipelineBoard = await pipelineRes.json();
         setPipelineBoard(data);
         setAllClients(Object.values(data).flat());
+      }
+      if (industriesRes.ok) {
+        setIndustries(await industriesRes.json());
       }
     } catch (err) {
       console.error(err);
@@ -102,13 +119,13 @@ export default function ClientsPage() {
     }
   }, [authFetch]);
 
-  useEffect(() => { fetchPipeline(); }, [fetchPipeline]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
     if (!socket) return;
-    socket.on('clients:update', fetchPipeline);
-    return () => { socket.off('clients:update', fetchPipeline); };
-  }, [socket, fetchPipeline]);
+    socket.on('clients:update', fetchData);
+    return () => { socket.off('clients:update', fetchData); };
+  }, [socket, fetchData]);
 
   // Drag handlers
   const handleDragStart = (e: React.DragEvent<HTMLElement>, clientId: string) => {
@@ -162,13 +179,13 @@ export default function ClientsPage() {
       if (!res.ok) {
         const err = await res.json();
         showToast(err.error || 'Failed to update stage', 'error');
-        fetchPipeline(); // rollback
+        fetchData(); // rollback
       } else {
         showToast(`Moved to ${STAGE_CONFIG[targetStage].label}`);
       }
     } catch {
       showToast('Failed to update stage', 'error');
-      fetchPipeline();
+      fetchData();
     }
   };
 
@@ -184,6 +201,7 @@ export default function ClientsPage() {
         body: JSON.stringify({
           ...newClientData,
           value: newClientData.value ? Number(newClientData.value) : null,
+          industry_id: newClientData.industry_id || null,
         }),
       });
 
@@ -195,8 +213,8 @@ export default function ClientsPage() {
 
       showToast('Client created successfully!');
       setIsNewModalOpen(false);
-      setNewClientData({ name: '', email: '', phone: '', company: '', pipeline_stage: 'LEAD', source: '', value: '' });
-      fetchPipeline();
+      setNewClientData({ name: '', email: '', phone: '', company: '', pipeline_stage: 'LEAD', source: '', value: '', industry_id: '' });
+      fetchData();
     } catch {
       showToast('Failed to create client', 'error');
     } finally {
@@ -280,8 +298,8 @@ export default function ClientsPage() {
           { label: 'New Leads', value: leadsCount, icon: ChevronRight, color: 'text-sky-400' },
           {
             label: 'Pipeline Value',
-            value: `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 0 })}`,
-            icon: DollarSign,
+            value: `₹${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`,
+            icon: IndianRupee,
             color: 'text-amber-400',
           },
         ].map((stat) => (
@@ -347,7 +365,7 @@ export default function ClientsPage() {
                   </div>
                   {stage !== 'CHURNED' && (
                     <span className="text-xs text-neutral-600">
-                      ${stageClients.reduce((sum, c) => sum + (c.value || 0), 0).toLocaleString()}
+                      ₹{stageClients.reduce((sum, c) => sum + (c.value || 0), 0).toLocaleString()}
                     </span>
                   )}
                 </div>
@@ -377,13 +395,18 @@ export default function ClientsPage() {
                               {client.company && (
                                 <p className="text-xs text-neutral-500 truncate">{client.company}</p>
                               )}
+                              {client.industry && (
+                                <span className="inline-flex items-center mt-1 gap-1 text-[10px] text-neutral-400 bg-neutral-800 px-1.5 py-0.5 rounded">
+                                  <Building2 size={10} /> {client.industry.name}
+                                </span>
+                              )}
                             </div>
                           </div>
 
                           <div className="mt-3 flex items-center justify-between gap-2">
                             {client.value ? (
                               <span className="text-xs font-medium text-amber-400">
-                                ${client.value.toLocaleString()}
+                                ₹{client.value.toLocaleString()}
                               </span>
                             ) : <span />}
                             <div className="flex gap-1">
@@ -420,79 +443,92 @@ export default function ClientsPage() {
       {/* LIST VIEW */}
       {viewMode === 'list' && (
         <div className="bg-neutral-900/40 border border-neutral-800 rounded-2xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-neutral-800">
-                {['Client', 'Company', 'Stage', 'Value', 'Last Contact', 'Channels'].map((h) => (
-                  <th key={h} className="text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider px-4 py-3">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <tr key={i} className="border-b border-neutral-800/50">
-                    <td colSpan={6} className="px-4 py-3">
-                      <Skeleton className="h-6 w-full rounded" />
-                    </td>
-                  </tr>
-                ))
-              ) : filteredClients.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-neutral-600 text-sm">
-                    No clients found
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-neutral-800">
+                  {['Client', 'Company', 'Industry', 'Stage', 'Value', 'Last Contact', 'Channels'].map((h) => (
+                    <th key={h} className="text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider px-4 py-3">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                filteredClients.map((client) => (
-                  <tr
-                    key={client.id}
-                    onClick={() => router.push(`/clients/${client.id}`)}
-                    className="border-b border-neutral-800/50 hover:bg-neutral-800/30 cursor-pointer transition-colors"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <Avatar name={client.name} size="sm" />
-                        <div>
-                          <p className="text-sm font-medium text-white">{client.name}</p>
-                          <p className="text-xs text-neutral-500">{client.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-neutral-400">{client.company || '—'}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant={STAGE_CONFIG[client.pipeline_stage].badge}>
-                        {STAGE_CONFIG[client.pipeline_stage].label}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-amber-400 font-medium">
-                      {client.value ? `$${client.value.toLocaleString()}` : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-neutral-500">
-                      {client.last_communication_at
-                        ? formatDistanceToNow(new Date(client.last_communication_at), { addSuffix: true })
-                        : 'Never'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        {client.connected_gmail && (
-                          <span className="text-xs bg-red-900/30 text-red-400 border border-red-800/30 rounded px-1.5 py-0.5">Gmail</span>
-                        )}
-                        {client.connected_whatsapp && (
-                          <span className="text-xs bg-green-900/30 text-green-400 border border-green-800/30 rounded px-1.5 py-0.5">WhatsApp</span>
-                        )}
-                        {!client.connected_gmail && !client.connected_whatsapp && (
-                          <span className="text-xs text-neutral-700">None</span>
-                        )}
-                      </div>
+              </thead>
+              <tbody>
+                {loading ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <tr key={i} className="border-b border-neutral-800/50">
+                      <td colSpan={7} className="px-4 py-3">
+                        <Skeleton className="h-6 w-full rounded" />
+                      </td>
+                    </tr>
+                  ))
+                ) : filteredClients.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-12 text-center text-neutral-600 text-sm">
+                      No clients found
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filteredClients.map((client) => (
+                    <tr
+                      key={client.id}
+                      onClick={() => router.push(`/clients/${client.id}`)}
+                      className="border-b border-neutral-800/50 hover:bg-neutral-800/30 cursor-pointer transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar name={client.name} size="sm" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-white truncate max-w-[150px]" title={client.name}>{client.name}</p>
+                            <p className="text-xs text-neutral-500 truncate max-w-[180px]" title={client.email}>{client.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-neutral-400">
+                        <div className="truncate max-w-[150px]" title={client.company || ''}>
+                          {client.company || '—'}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-neutral-400">
+                        {client.industry ? (
+                          <span className="inline-flex items-center gap-1 bg-neutral-800 px-2 py-0.5 rounded">
+                            <Building2 size={10} /> {client.industry.name}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={STAGE_CONFIG[client.pipeline_stage].badge}>
+                          {STAGE_CONFIG[client.pipeline_stage].label}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-amber-400 font-medium">
+                        {client.value ? `₹${client.value.toLocaleString()}` : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-neutral-500">
+                        {client.last_communication_at
+                          ? formatDistanceToNow(new Date(client.last_communication_at), { addSuffix: true })
+                          : 'Never'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1">
+                          {client.connected_gmail && (
+                            <span className="text-xs bg-red-900/30 text-red-400 border border-red-800/30 rounded px-1.5 py-0.5">Gmail</span>
+                          )}
+                          {client.connected_whatsapp && (
+                            <span className="text-xs bg-green-900/30 text-green-400 border border-green-800/30 rounded px-1.5 py-0.5">WhatsApp</span>
+                          )}
+                          {!client.connected_gmail && !client.connected_whatsapp && (
+                            <span className="text-xs text-neutral-700">None</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -569,7 +605,23 @@ export default function ClientsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-400 mb-1">Deal Value ($)</label>
+                    <label className="block text-xs font-medium text-neutral-400 mb-1">Industry</label>
+                    <select
+                      value={newClientData.industry_id}
+                      onChange={(e) => setNewClientData((p) => ({ ...p, industry_id: e.target.value }))}
+                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="">Select industry...</option>
+                      {industries.map((ind) => (
+                        <option key={ind.id} value={ind.id}>{ind.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-400 mb-1">Deal Value (₹)</label>
                     <Input
                       type="number"
                       value={newClientData.value}
@@ -577,20 +629,19 @@ export default function ClientsPage() {
                       placeholder="5000"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-neutral-400 mb-1">Source</label>
-                  <select
-                    value={newClientData.source}
-                    onChange={(e) => setNewClientData((p) => ({ ...p, source: e.target.value }))}
-                    className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="">Select source...</option>
-                    {['Referral', 'Website', 'LinkedIn', 'Cold Outreach', 'Event', 'Partner', 'Other'].map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-400 mb-1">Source</label>
+                    <select
+                      value={newClientData.source}
+                      onChange={(e) => setNewClientData((p) => ({ ...p, source: e.target.value }))}
+                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="">Select source...</option>
+                      {['Referral', 'Website', 'LinkedIn', 'Cold Outreach', 'Event', 'Partner', 'Other'].map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-2 border-t border-neutral-800">

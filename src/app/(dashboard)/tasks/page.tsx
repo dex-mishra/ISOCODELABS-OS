@@ -21,7 +21,8 @@ import {
   AlertCircle,
   X,
   Trash2,
-  ArrowUpDown
+  ArrowUpDown,
+  ArrowUpRight,
 } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -127,6 +128,9 @@ export default function TasksPage() {
   // Detail Slide-over Panel
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [newSubTaskTitle, setNewSubTaskTitle] = useState('');
+
+  // Completed tasks collapse state
+  const [showAllCompleted, setShowAllCompleted] = useState(false);
 
   // Modals
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -319,36 +323,22 @@ export default function TasksPage() {
   const handleAddSubTask = async () => {
     if (!selectedTask || !newSubTaskTitle.trim()) return;
 
-    const newSubTask = {
-      title: newSubTaskTitle.trim(),
-      is_completed: false,
-    };
-
-    const updatedSubTasks = [...(selectedTask.sub_tasks || []), newSubTask];
-
     try {
-      const res = await authFetch(`/api/tasks/${selectedTask.id}`, {
-        method: 'PUT',
+      const res = await authFetch(`/api/tasks/${selectedTask.id}/subtasks`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: selectedTask.title,
-          description: selectedTask.description,
-          status: selectedTask.status,
-          priority: selectedTask.priority,
-          assignee_id: selectedTask.assignee_id,
-          project_id: selectedTask.project_id,
-          meeting_id: selectedTask.meeting_id,
-          due_date: selectedTask.due_date,
-          tags: selectedTask.tags,
-          subTasks: updatedSubTasks,
-        }),
+        body: JSON.stringify({ title: newSubTaskTitle.trim() }),
       });
 
       if (res.ok) {
-        const updated = await res.json();
-        setSelectedTask(updated);
         setNewSubTaskTitle('');
-        fetchTasks();
+        // Re-fetch the task to get updated subtasks
+        const taskRes = await authFetch(`/api/tasks/${selectedTask.id}`);
+        if (taskRes.ok) {
+          const updated = await taskRes.json();
+          setSelectedTask(updated);
+          fetchTasks();
+        }
       }
     } catch (err) {
       console.error('Failed to add subtask:', err);
@@ -359,35 +349,72 @@ export default function TasksPage() {
   const handleToggleSubTask = async (subTaskId: string, isCompleted: boolean) => {
     if (!selectedTask) return;
 
-    const updatedSubTasks = (selectedTask.sub_tasks || []).map((st) =>
-      st.id === subTaskId ? { ...st, is_completed: isCompleted } : st
+    // Optimistic update
+    setSelectedTask((prev) =>
+      prev
+        ? {
+            ...prev,
+            sub_tasks: prev.sub_tasks.map((st) =>
+              st.id === subTaskId ? { ...st, is_completed: isCompleted } : st
+            ),
+          }
+        : prev
     );
 
     try {
-      const res = await authFetch(`/api/tasks/${selectedTask.id}`, {
-        method: 'PUT',
+      await authFetch(`/api/tasks/${selectedTask.id}/subtasks/${subTaskId}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: selectedTask.title,
-          description: selectedTask.description,
-          status: selectedTask.status,
-          priority: selectedTask.priority,
-          assignee_id: selectedTask.assignee_id,
-          project_id: selectedTask.project_id,
-          meeting_id: selectedTask.meeting_id,
-          due_date: selectedTask.due_date,
-          tags: selectedTask.tags,
-          subTasks: updatedSubTasks,
-        }),
+        body: JSON.stringify({ is_completed: isCompleted }),
       });
+      fetchTasks();
+    } catch (err) {
+      console.error('Failed to toggle subtask:', err);
+    }
+  };
 
+  // SubTask delete
+  const handleDeleteSubTask = async (subTaskId: string) => {
+    if (!selectedTask) return;
+    try {
+      const res = await authFetch(`/api/tasks/${selectedTask.id}/subtasks/${subTaskId}`, {
+        method: 'DELETE',
+      });
       if (res.ok) {
-        const updated = await res.json();
-        setSelectedTask(updated);
+        setSelectedTask((prev) =>
+          prev
+            ? { ...prev, sub_tasks: prev.sub_tasks.filter((st) => st.id !== subTaskId) }
+            : prev
+        );
         fetchTasks();
       }
     } catch (err) {
-      console.error('Failed to update subtask:', err);
+      console.error('Failed to delete subtask:', err);
+    }
+  };
+
+  // Convert subtask to full task
+  const handleConvertSubTask = async (subTaskId: string) => {
+    if (!selectedTask) return;
+    if (!confirm('Convert this sub-task to a full standalone task?')) return;
+    try {
+      const res = await authFetch(`/api/tasks/${selectedTask.id}/subtasks/${subTaskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'convert' }),
+      });
+      if (res.ok) {
+        // Re-fetch this task to update its subtask list
+        const taskRes = await authFetch(`/api/tasks/${selectedTask.id}`);
+        if (taskRes.ok) {
+          const updated = await taskRes.json();
+          setSelectedTask(updated);
+        }
+        fetchTasks();
+        fetchStats();
+      }
+    } catch (err) {
+      console.error('Failed to convert subtask:', err);
     }
   };
 
@@ -635,15 +662,28 @@ export default function TasksPage() {
           </Button>
         </div>
       ) : viewMode === 'kanban' ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-6" style={{ minWidth: 'max-content' }}>
           {COLUMNS.map((col) => {
             const columnTasks = tasks.filter((t) => t.status === col.id);
+            // For DONE column: show only 5 most recent unless expanded
+            const MAX_VISIBLE_COMPLETED = 5;
+            const isDoneColumn = col.id === 'DONE';
+            const sortedColumnTasks = isDoneColumn
+              ? [...columnTasks].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              : columnTasks;
+            const visibleTasks = isDoneColumn && !showAllCompleted && sortedColumnTasks.length > MAX_VISIBLE_COMPLETED
+              ? sortedColumnTasks.slice(0, MAX_VISIBLE_COMPLETED)
+              : sortedColumnTasks;
+            const hiddenCount = isDoneColumn ? sortedColumnTasks.length - MAX_VISIBLE_COMPLETED : 0;
+
             return (
               <div
                 key={col.id}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => handleDrop(e, col.id)}
                 className={`bg-neutral-950/40 border border-neutral-900 rounded-xl p-4 min-h-[500px] flex flex-col gap-4 ${col.color}`}
+                style={{ minWidth: '280px', width: '280px' }}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-neutral-300">{col.name}</span>
@@ -652,13 +692,14 @@ export default function TasksPage() {
                   </Badge>
                 </div>
 
-                <div className="flex-1 flex flex-col gap-3 overflow-y-auto max-h-[600px] pr-1">
+                <div className="flex-1 flex flex-col gap-3 overflow-y-auto pr-1" style={{ maxHeight: 'calc(100vh - 250px)' }}>
                   {columnTasks.length === 0 ? (
                     <div className="flex-1 border-2 border-dashed border-neutral-900 rounded-xl flex items-center justify-center p-6 text-center">
                       <span className="text-xs text-neutral-600">Drag items here</span>
                     </div>
                   ) : (
-                    columnTasks.map((task) => {
+                    <>
+                    {visibleTasks.map((task) => {
                       const isTaskOverdue = task.due_date && isPast(new Date(task.due_date)) && task.status !== 'DONE';
                       return (
                         <motion.div
@@ -713,6 +754,32 @@ export default function TasksPage() {
                             )}
                           </div>
 
+                          {/* Sub-task progress bar */}
+                          {task.sub_tasks.length > 0 && (() => {
+                            const done = task.sub_tasks.filter((st) => st.is_completed).length;
+                            const total = task.sub_tasks.length;
+                            const pct = Math.round((done / total) * 100);
+                            return (
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-[10px] text-neutral-500">
+                                  <span className="flex items-center gap-0.5">
+                                    <CheckSquare className="w-3 h-3" />
+                                    {done}/{total} subtasks
+                                  </span>
+                                  <span className={pct === 100 ? 'text-green-400' : ''}>{pct}%</span>
+                                </div>
+                                <div className="h-1 bg-neutral-800 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${
+                                      pct === 100 ? 'bg-green-500' : 'bg-blue-500'
+                                    }`}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })()}
+
                           <div className="flex items-center justify-between border-t border-neutral-850/50 pt-3 text-[10px] text-neutral-500">
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
@@ -734,12 +801,23 @@ export default function TasksPage() {
                           </div>
                         </motion.div>
                       );
-                    })
+                    })}
+                    {/* Show more / Show less toggle for completed column */}
+                    {isDoneColumn && hiddenCount > 0 && (
+                      <button
+                        onClick={() => setShowAllCompleted(!showAllCompleted)}
+                        className="w-full py-2 px-3 text-xs font-medium text-neutral-400 hover:text-white bg-neutral-900/50 hover:bg-neutral-800/60 border border-neutral-800 rounded-lg transition-colors text-center"
+                      >
+                        {showAllCompleted ? 'Show less' : `Show ${hiddenCount} more completed tasks`}
+                      </button>
+                    )}
+                    </>
                   )}
                 </div>
               </div>
             );
           })}
+          </div>
         </div>
       ) : (
         /* List View */
@@ -775,11 +853,13 @@ export default function TasksPage() {
                         isTaskOverdue ? 'bg-red-950/5' : ''
                       }`}
                     >
-                      <td className="p-4 font-medium text-white flex flex-col gap-1">
-                        <span>{task.title}</span>
-                        {task.project && (
-                          <span className="text-[10px] text-purple-400 font-normal">Project: {task.project.name}</span>
-                        )}
+                      <td className="p-4 font-medium text-white">
+                        <div className="flex flex-col gap-0.5 max-w-[250px] min-w-0">
+                          <span className="truncate block" title={task.title}>{task.title}</span>
+                          {task.project && (
+                            <span className="text-[10px] text-purple-400 font-normal truncate block" title={task.project.name}>Project: {task.project.name}</span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4">
                         <Badge
@@ -980,16 +1060,32 @@ export default function TasksPage() {
                     <p className="text-xs text-neutral-600 italic">No checklist items yet.</p>
                   ) : (
                     selectedTask.sub_tasks.map((st) => (
-                      <div key={st.id} className="flex items-center justify-between bg-neutral-950/20 p-2.5 border border-neutral-850/50 rounded-lg">
-                        <label className="flex items-center gap-3 cursor-pointer text-sm text-neutral-300">
+                      <div key={st.id} className="flex items-center justify-between bg-neutral-950/20 p-2.5 border border-neutral-850/50 rounded-lg group">
+                        <label className="flex items-center gap-3 cursor-pointer text-sm text-neutral-300 flex-1 min-w-0">
                           <input
                             type="checkbox"
                             checked={st.is_completed}
                             onChange={(e) => handleToggleSubTask(st.id!, e.target.checked)}
-                            className="rounded border-neutral-800 bg-neutral-950 text-blue-500 focus:ring-0 w-4 h-4"
+                            className="rounded border-neutral-800 bg-neutral-950 text-blue-500 focus:ring-0 w-4 h-4 shrink-0"
                           />
-                          <span className={st.is_completed ? 'line-through text-neutral-500' : ''}>{st.title}</span>
+                          <span className={`truncate ${st.is_completed ? 'line-through text-neutral-500' : ''}`}>{st.title}</span>
                         </label>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2">
+                          <button
+                            onClick={() => handleConvertSubTask(st.id!)}
+                            title="Convert to full task"
+                            className="p-1 rounded text-neutral-500 hover:text-blue-400 transition-colors"
+                          >
+                            <ArrowUpRight className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSubTask(st.id!)}
+                            title="Delete subtask"
+                            className="p-1 rounded text-neutral-500 hover:text-red-400 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}

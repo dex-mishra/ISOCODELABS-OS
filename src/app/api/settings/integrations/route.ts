@@ -42,9 +42,11 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. WhatsApp connection info
+    const whatsappMode = settingsMap['whatsapp_connection_mode'] || 'business';
+    const whatsappQrConnected = settingsMap['whatsapp_qr_connected'] === 'true';
     const whatsappToken = settingsMap['whatsapp_api_token'] || process.env.WHATSAPP_API_TOKEN || '';
     const whatsappPhoneId = settingsMap['whatsapp_phone_number_id'] || process.env.WHATSAPP_PHONE_NUMBER_ID || '';
-    const whatsappConnected = !!(whatsappToken && whatsappPhoneId);
+    const whatsappConnected = whatsappMode === 'qr' ? whatsappQrConnected : !!(whatsappToken && whatsappPhoneId);
 
     // 3. Google AI connection info
     const googleAiKey = settingsMap['google_ai_api_key'] || process.env.GOOGLE_AI_API_KEY || '';
@@ -55,6 +57,7 @@ export async function GET(req: NextRequest) {
       google: googleStatus,
       whatsapp: {
         connected: whatsappConnected,
+        mode: whatsappMode,
         phone_number_id: whatsappPhoneId || null,
         is_mock: whatsappToken.startsWith('mock'),
       },

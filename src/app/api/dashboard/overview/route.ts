@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
         module: 'projects',
         action: 'updated',
         title: p.name,
-        detail: `Status set to ${p.status}. Budget: $${p.budget || 0}`,
+        detail: `Status set to ${p.status}. Budget: ₹${p.budget || 0}`,
         timestamp: p.updated_at
       })),
       ...recentIdeas.map(i => ({

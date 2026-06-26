@@ -17,10 +17,71 @@ export async function submitImagePrompt(
     const apiKey = setting?.value || process.env.GOOGLE_AI_API_KEY || '';
     let imageUrl = '';
 
-    // If it's a mock key or not set, simulate generation and return a high-quality mock image
+    // If it's a mock key or not set, try Vertex AI with service account
     if (!apiKey || apiKey === 'mock-google-ai-key') {
-      await new Promise((resolve) => setTimeout(resolve, 3000)); // 3 seconds simulation
-      imageUrl = `https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80&sig=${Math.floor(Math.random() * 1000)}`;
+      // Use Vertex AI with service account (same as chat)
+      const { getAccessToken } = await import('../ai/chat');
+      const accessToken = await getAccessToken();
+      
+      if (!accessToken) {
+        throw new Error('Imagen not configured. Need GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_AI_API_KEY');
+      }
+
+      const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || '';
+      const GCP_LOCATION = process.env.GCP_LOCATION || 'us-central1';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+      try {
+        let aspectRatioParam = "1:1";
+        if (parameters && typeof parameters === 'object') {
+          const res = parameters.resolution;
+          if (res === "768x1024") aspectRatioParam = "3:4";
+          else if (res === "1024x768") aspectRatioParam = "4:3";
+        }
+
+        let promptText = prompt;
+        if (parameters && typeof parameters === 'object' && parameters.style) {
+          promptText = `${prompt}, style: ${parameters.style}`;
+        }
+
+        const response = await fetch(
+          `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/imagen-3.0-generate-002:predict`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              instances: [{ prompt: promptText }],
+              parameters: {
+                sampleCount: 1,
+                aspectRatio: aspectRatioParam,
+              }
+            }),
+            signal: controller.signal
+          }
+        );
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMsg = errorData.error?.message || response.statusText;
+          throw new Error(`Imagen API error: ${errorMsg} (${response.status})`);
+        }
+
+        const data = await response.json();
+        const base64Bytes = data.predictions?.[0]?.bytesBase64Encoded;
+        if (!base64Bytes) {
+          throw new Error(`Imagen did not return image data. Response: ${JSON.stringify(data).slice(0, 200)}`);
+        }
+        imageUrl = `data:image/png;base64,${base64Bytes}`;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        throw err;
+      }
     } else {
       // Real API Call with 60 seconds timeout
       const controller = new AbortController();

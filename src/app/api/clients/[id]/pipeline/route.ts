@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
 import { PipelineStage } from '@prisma/client';
+import { addClientWonIncome } from '@/lib/money/auto-income';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,8 +51,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data: { pipeline_stage: newStage },
     });
 
+    // Auto-add income when client is won (moved to ACTIVE)
+    let incomeAdded: number | null = null;
+    if (newStage === 'ACTIVE' && client.pipeline_stage !== 'ACTIVE') {
+      incomeAdded = await addClientWonIncome(params.id);
+    }
+
     const io = (globalThis as { io?: { emit: (event: string, data: unknown) => void } }).io;
-    if (io) io.emit('clients:update', { action: 'pipeline', clientId: updated.id, stage: newStage });
+    if (io) {
+      io.emit('clients:update', { action: 'pipeline', clientId: updated.id, stage: newStage });
+      if (incomeAdded) io.emit('money:update', { action: 'income', source: 'client', amount: incomeAdded });
+    }
 
     // Trigger notification for all other users
     try {
@@ -71,7 +81,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       console.error('Failed to trigger client pipeline notification:', err);
     }
 
-    return NextResponse.json(updated);
+    return NextResponse.json({ ...updated, incomeAdded });
   } catch (error) {
     console.error('PATCH pipeline error:', error);
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });

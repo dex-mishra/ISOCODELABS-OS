@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { requireAuth } from '@/lib/auth/middleware';
 import { ProjectStatus } from '@prisma/client';
+import { addProjectCompletionIncome } from '@/lib/money/auto-income';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
             },
           },
         },
+        transactions: {
+          orderBy: { date: 'desc' },
+        },
+        invoices: {
+          orderBy: { issue_date: 'desc' },
+        },
+        industry: {
+          select: { id: true, name: true },
+        },
       },
     });
 
@@ -60,7 +70,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     const { id } = params;
     const body = await req.json();
-    const { name, description, client_id, status, start_date, end_date, budget } = body;
+    const { name, description, client_id, status, start_date, end_date, budget, industry_id } = body;
 
     if (!name || !client_id) {
       return NextResponse.json(
@@ -68,6 +78,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         { status: 400 }
       );
     }
+
+    // Capture previous status to detect transition INTO completed
+    const prev = await prisma.project.findUnique({
+      where: { id },
+      select: { status: true },
+    });
 
     const project = await prisma.project.update({
       where: { id },
@@ -79,13 +95,27 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         start_date: start_date ? new Date(start_date) : null,
         end_date: end_date ? new Date(end_date) : null,
         budget: budget ? parseFloat(budget) : null,
+        industry_id: industry_id || null,
       },
       include: {
         client: {
           select: { id: true, name: true, company: true },
         },
+        industry: {
+          select: { id: true, name: true },
+        },
       },
     });
+
+    // Auto-add income when project transitions INTO completed
+    let incomeAdded: number | null = null;
+    if (status === 'COMPLETED' && prev?.status !== 'COMPLETED') {
+      incomeAdded = await addProjectCompletionIncome(id);
+      const io = (globalThis as { io?: { emit: (event: string, data: unknown) => void } }).io;
+      if (io && incomeAdded) {
+        io.emit('money:update', { action: 'income', source: 'project', amount: incomeAdded });
+      }
+    }
 
     // Broadcast WebSocket event
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -94,7 +124,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       io.emit('projects:update', { action: 'update', projectId: id });
     }
 
-    return NextResponse.json(project);
+    return NextResponse.json({ ...project, incomeAdded });
   } catch (error) {
     console.error('PUT project by ID error:', error);
     return NextResponse.json(

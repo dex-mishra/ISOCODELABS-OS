@@ -17,11 +17,12 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status');
     const search = searchParams.get('search');
 
-    // Build filter
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const whereClause: any = {};
+    const whereClause: Record<string, unknown> = {};
     if (status && status !== 'ALL') {
       whereClause.status = status as ProjectStatus;
+    }
+    if (searchParams.get('industry_id')) {
+      whereClause.industry_id = searchParams.get('industry_id');
     }
     if (search) {
       whereClause.OR = [
@@ -37,6 +38,9 @@ export async function GET(req: NextRequest) {
       include: {
         client: {
           select: { id: true, name: true, company: true },
+        },
+        industry: {
+          select: { id: true, name: true, icon: true, color: true },
         },
         milestones: {
           select: { id: true, status: true },
@@ -63,7 +67,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, description, client_id, status, start_date, end_date, budget } = body;
+    const { name, description, client_id, status, start_date, end_date, budget, industry_id } = body;
 
     if (!name || !client_id) {
       return NextResponse.json(
@@ -81,11 +85,15 @@ export async function POST(req: NextRequest) {
         start_date: start_date ? new Date(start_date) : null,
         end_date: end_date ? new Date(end_date) : null,
         budget: budget ? parseFloat(budget) : null,
+        industry_id: industry_id || null,
         created_by: user.id,
       },
       include: {
         client: {
           select: { id: true, name: true, company: true },
+        },
+        industry: {
+          select: { id: true, name: true, icon: true, color: true },
         },
         milestones: true,
       },

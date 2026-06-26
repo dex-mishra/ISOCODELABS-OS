@@ -17,11 +17,68 @@ export async function submitVideoPrompt(
     const apiKey = setting?.value || process.env.GOOGLE_AI_API_KEY || '';
     let videoUrl = '';
 
-    // If it's a mock key or not set, simulate generation and return a high-quality mock video
+    // If it's a mock key or not set, use Vertex AI with service account
     if (!apiKey || apiKey === 'mock-google-ai-key') {
-      await new Promise((resolve) => setTimeout(resolve, 5000)); // 5 seconds simulation for video
-      // Standard stable high-quality sample video
-      videoUrl = 'https://assets.mixkit.co/videos/preview/mixkit-abstract-laser-lights-background-31718-large.mp4';
+      const { getAccessToken } = await import('../ai/chat');
+      const accessToken = await getAccessToken();
+      
+      if (!accessToken) {
+        throw new Error('Veo not configured. Need GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_AI_API_KEY');
+      }
+
+      const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || '';
+      const GCP_LOCATION = process.env.GCP_LOCATION || 'us-central1';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+      try {
+        let durationSeconds = 5;
+        if (parameters && typeof parameters === 'object') {
+          const dur = parameters.duration;
+          if (dur === '10s') durationSeconds = 10;
+        }
+        let aspect = "16:9";
+        if (parameters && typeof parameters === 'object' && parameters.aspect_ratio) {
+          aspect = parameters.aspect_ratio as string;
+        }
+
+        const response = await fetch(
+          `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/veo-3.0-generate-001:predict`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              instances: [{ prompt }],
+              parameters: {
+                aspectRatio: aspect,
+                durationSeconds: durationSeconds
+              }
+            }),
+            signal: controller.signal
+          }
+        );
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMsg = errorData.error?.message || response.statusText;
+          throw new Error(`Veo API error: ${errorMsg} (${response.status})`);
+        }
+
+        const data = await response.json();
+        const base64Bytes = data.predictions?.[0]?.bytesBase64Encoded || data.predictions?.[0]?.video?.bytesBase64Encoded;
+        if (!base64Bytes) {
+          throw new Error(`Veo did not return video data. Response: ${JSON.stringify(data).slice(0, 200)}`);
+        }
+        videoUrl = `data:video/mp4;base64,${base64Bytes}`;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        throw err;
+      }
     } else {
       // Real API Call with 120 seconds timeout
       const controller = new AbortController();
@@ -38,7 +95,7 @@ export async function submitVideoPrompt(
           aspect = parameters.aspect_ratio as string;
         }
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predict?key=${apiKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/veo-3.0-generate-001:predict?key=${apiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
