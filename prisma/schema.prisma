@@ -838,3 +838,40 @@ model TeamMessage {
   @@index([channel_id, created_at])
   @@map("team_messages")
 }
+
+// ─── Child Brand ──────────────────────────────────────────────────────────────
+
+enum ChildBrandProductType {
+  CHILD_PRODUCT
+  DAUGHTER_COMPANY
+}
+
+enum ChildBrandStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model ChildBrand {
+  id               String                @id @default(uuid())
+  name             String
+  product_type     ChildBrandProductType
+  mission          String?
+  vision           String?
+  enemy            String?
+  target_audience  String?
+  promise          String?
+  story            String?
+  voice            String?
+  vocabulary       String[]
+  tagline          String?
+  messaging        String?
+  custom_colors    Json?
+  custom_logo_url  String?
+  status           ChildBrandStatus      @default(DRAFT)
+  compliance_score Float?
+  created_at       DateTime              @default(now())
+  updated_at       DateTime              @updatedAt
+
+  @@map("child_brands")
+}
