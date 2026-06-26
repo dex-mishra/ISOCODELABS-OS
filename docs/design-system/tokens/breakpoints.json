@@ -1,0 +1,46 @@
+{
+  "viewport": {
+    "mobile": "0px",
+    "mobileLg": "480px",
+    "tablet": "768px",
+    "tabletLg": "1024px",
+    "desktop": "1280px",
+    "desktopLg": "1440px",
+    "desktopXL": "1600px",
+    "ultrawide": "1920px"
+  },
+  "container": {
+    "xs": "480px",
+    "sm": "640px",
+    "md": "768px",
+    "lg": "1024px",
+    "xl": "1280px",
+    "2xl": "1440px",
+    "reading": "760px",
+    "dashboard": "1600px"
+  },
+  "grid": {
+    "columns": { "mobile": 4, "tablet": 8, "desktop": 12 },
+    "gutter": { "mobile": "16px", "tablet": "24px", "desktop": "32px" },
+    "margin": { "mobile": "20px", "tablet": "32px", "desktop": "64px" }
+  },
+  "layout": {
+    "maxContentWidth": "1440px",
+    "sidebarWidth": "280px",
+    "collapsedSidebarWidth": "88px",
+    "headerHeight": "72px",
+    "mobileHeaderHeight": "64px"
+  },
+  "zIndex": {
+    "base": 0,
+    "content": 10,
+    "sticky": 100,
+    "dropdown": 200,
+    "overlay": 300,
+    "drawer": 400,
+    "modal": 500,
+    "toast": 600,
+    "tooltip": 700,
+    "max": 9999
+  }
+}

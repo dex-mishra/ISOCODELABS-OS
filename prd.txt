@@ -10,7 +10,8 @@ Team: 2 users (founders)
 Type: Internal operations management web application
 Vision: A shared, premium workspace (Notion-like) that consolidates all daily
         operations for Isocodelabs' multiple digital products into one place.
-Design Language: Apple.com-inspired — clean, minimal, elegant, premium UI/UX.
+Design Language: The ISOCODELABS Design System — clean, minimal, elegant,
+        premium; inherited from design.md + brand.md (see Section 7).
 
 2. PROBLEM STATEMENT
 -------------------------------------------------------------------------------
@@ -270,16 +271,33 @@ Integration:
 
 7. UI/UX REQUIREMENTS
 -------------------------------------------------------------------------------
-Design Inspiration: Apple.com
-- Clean, minimal interface with generous whitespace
-- Elegant typography (SF Pro / Inter font family)
-- Smooth animations and transitions (Framer Motion)
-- Subtle shadows and depth
-- Consistent spacing system (8px grid)
-- Dark/light mode support
-- Responsive but optimized for desktop
-- Target initial load: < 3 seconds
-- Code-split by module, lazy-load heavy components
+Design Language: The ISOCODELABS Design System (inherited).
+
+Isocodelabs Ops Hub is an ISOCODELABS product, so it inherits the design
+language (design.md) and brand philosophy (brand.md) directly. The full
+foundation is vendored in docs/design-system/; the literal tokens are the
+single source of truth in src/design/tokens.ts (wired into Tailwind). See
+.kiro/steering/design-language.md and brand.md.
+
+- Clean, minimal interface with generous whitespace; hierarchy before color.
+- Typography: Inter (UI) and JetBrains Mono (data, code, metrics).
+- Cobalt (#2563EB) is the only interactive color; copper is reserved for rare
+  emphasis. Neutral surfaces carry the interface.
+- Purposeful motion only (Framer Motion), physical easing, reduced-motion honored.
+- Subtle, structural depth — no decorative shadows or gradients.
+- Spacing scale (4/8/12/16/24/32/48/64/96/128…); a superset of the 8px grid.
+- Restrained radii: 12px controls, 16px cards, 24px modals.
+- Dark/light mode (light is default); responsive, optimized for desktop.
+- Target initial load: < 3 seconds; code-split by module, lazy-load heavy components.
+
+RECONCILIATION NOTE (per BrandOS README Authority Hierarchy):
+Earlier drafts described the design language as "Apple.com-inspired" using
+"SF Pro / Inter". As an ISOCODELABS product, this app inherits the ISOCODELABS
+design language instead. The two directions share the same sensibility (calm,
+minimal, premium restraint); the inherited system is the more rigorous,
+canonical version. Concrete differences now in force: Inter + JetBrains Mono
+(not SF Pro); cobalt #2563EB accent (not Apple system blue); and the BrandOS
+token scales for spacing, radius, shadow, and motion.
 
 8. TECHNICAL STACK
 -------------------------------------------------------------------------------

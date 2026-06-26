@@ -1,0 +1,39 @@
+{
+  "library": "Lucide",
+  "sizes": {
+    "xs": "12",
+    "sm": "16",
+    "md": "20",
+    "lg": "24",
+    "xl": "32",
+    "2xl": "40",
+    "3xl": "48",
+    "display": "64"
+  },
+  "stroke": {
+    "thin": "1",
+    "regular": "1.5",
+    "medium": "1.75",
+    "bold": "2"
+  },
+  "cornerRadius": {
+    "default": "4",
+    "rounded": "6",
+    "soft": "8"
+  },
+  "style": {
+    "family": "Outlined",
+    "fill": "None",
+    "caps": "Round",
+    "joins": "Round",
+    "grid": "24",
+    "opticalAlignment": true
+  },
+  "colors": {
+    "default": "text.primary",
+    "secondary": "text.secondary",
+    "accent": "accent.blue",
+    "emphasis": "emphasis.default",
+    "inverse": "text.inverse"
+  }
+}
