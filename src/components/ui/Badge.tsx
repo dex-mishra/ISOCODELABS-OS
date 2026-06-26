@@ -5,18 +5,22 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'secondary' | 'success' | 'warning' | 'danger';
+  variant?: 'default' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' | 'emphasis';
 }
 
 export const Badge = ({ className, variant = 'default', children, ...props }: BadgeProps) => {
-  const baseStyles = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide transition-colors';
-  
+  const baseStyles = 'inline-flex items-center px-2.5 py-0.5 rounded-pill text-caption font-semibold tracking-wide';
+
+  // Semantic, tinted-surface badges. `emphasis` (copper) is for rare
+  // craftsmanship moments only, never routine status (design-language.md).
   const variants = {
-    default: 'bg-apple-blue/10 text-apple-blue border border-apple-blue/20',
-    secondary: 'bg-sf-text-secondaryLight/10 text-sf-text-secondaryLight dark:text-sf-text-secondaryDark dark:bg-sf-text-secondaryDark/10 border border-sf-text-secondaryLight/20',
-    success: 'bg-apple-green/10 text-apple-green border border-apple-green/20',
-    warning: 'bg-apple-orange/10 text-apple-orange border border-apple-orange/20',
-    danger: 'bg-apple-red/10 text-apple-red border border-apple-red/20',
+    default: 'bg-accent-blue/10 text-accent-blue border border-accent-blue/20',
+    secondary: 'bg-neutral-500/10 text-[var(--text-secondary)] border border-neutral-500/20',
+    success: 'bg-success/10 text-success border border-success/20',
+    warning: 'bg-warning/10 text-warning border border-warning/20',
+    danger: 'bg-danger/10 text-danger border border-danger/20',
+    info: 'bg-info/10 text-info border border-info/20',
+    emphasis: 'bg-emphasis/10 text-emphasis border border-emphasis/25',
   };
 
   return (

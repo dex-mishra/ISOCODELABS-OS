@@ -1,0 +1,49 @@
+{
+  "duration": {
+    "instant": "0ms",
+    "micro": "80ms",
+    "fast": "150ms",
+    "normal": "250ms",
+    "medium": "350ms",
+    "slow": "500ms",
+    "slower": "700ms",
+    "hero": "1200ms"
+  },
+  "delay": {
+    "none": "0ms",
+    "xs": "50ms",
+    "sm": "100ms",
+    "md": "150ms",
+    "lg": "250ms",
+    "xl": "400ms"
+  },
+  "easing": {
+    "linear": "linear",
+    "standard": "cubic-bezier(0.4,0,0.2,1)",
+    "enter": "cubic-bezier(0.16,1,0.3,1)",
+    "exit": "cubic-bezier(0.7,0,0.84,0)",
+    "decisive": "cubic-bezier(0.22,1,0.36,1)",
+    "hero": "cubic-bezier(0.19,1,0.22,1)"
+  },
+  "scale": {
+    "hover": "1.02",
+    "active": "0.98",
+    "focus": "1.01"
+  },
+  "opacity": {
+    "hidden": "0",
+    "visible": "1",
+    "disabled": "0.45"
+  },
+  "presets": {
+    "fadeIn": { "duration": "motion.duration.normal", "easing": "motion.easing.enter" },
+    "fadeUp": { "duration": "motion.duration.medium", "translateY": "16px", "easing": "motion.easing.enter" },
+    "fadeDown": { "duration": "motion.duration.medium", "translateY": "-16px", "easing": "motion.easing.enter" },
+    "scaleIn": { "duration": "motion.duration.fast", "scale": "0.96", "easing": "motion.easing.decisive" },
+    "heroReveal": { "duration": "motion.duration.hero", "easing": "motion.easing.hero" }
+  },
+  "accessibility": {
+    "reducedMotionFallback": true,
+    "keyboardOutlineOffset": "2px"
+  }
+}

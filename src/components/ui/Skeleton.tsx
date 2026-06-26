@@ -8,7 +8,8 @@ type SkeletonProps = React.HTMLAttributes<HTMLDivElement>;
 export const Skeleton = ({ className, ...props }: SkeletonProps) => {
   return (
     <div
-      className={twMerge('animate-pulse rounded-apple bg-zinc-200 dark:bg-zinc-800/60 opacity-70', className)}
+      aria-hidden="true"
+      className={twMerge('animate-pulse rounded-md bg-neutral-200 dark:bg-neutral-800/60', className)}
       {...props}
     />
   );

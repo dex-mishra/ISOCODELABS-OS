@@ -21,17 +21,18 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           type={type}
           ref={ref}
+          aria-invalid={error ? true : undefined}
           className={twMerge(
             clsx(
-              'w-full px-4 py-2.5 text-sm bg-apple-gray dark:bg-sf-bg-elevatedDark text-foreground border border-border rounded-apple focus:outline-none focus:ring-2 focus:ring-apple-blue/50 focus:border-apple-blue transition-all disabled:opacity-50 disabled:pointer-events-none',
-              error && 'border-apple-red focus:ring-apple-red/50 focus:border-apple-red'
+              'w-full px-4 py-2.5 text-body-sm bg-apple-gray dark:bg-sf-bg-elevatedDark text-foreground placeholder:text-[var(--text-tertiary)] border border-border rounded-md transition-colors duration-fast ease-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:border-accent-blue disabled:opacity-45 disabled:pointer-events-none',
+              error && 'border-danger focus-visible:ring-danger focus-visible:border-danger'
             ),
             className
           )}
           {...props}
         />
         {error && (
-          <span className="text-xs text-apple-red font-medium mt-0.5">
+          <span className="text-caption text-danger font-medium mt-0.5">
             {error}
           </span>
         )}

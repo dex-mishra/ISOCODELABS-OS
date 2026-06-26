@@ -1,0 +1,93 @@
+{
+  "brand": {
+    "primary": "#0B0D10",
+    "secondary": "#1C1F23",
+    "tertiary": "#9CA3A8",
+    "surface": "#FAFAF8",
+    "surfaceMuted": "#ECECE8",
+    "surfaceAlt": "#D9D9D6",
+    "white": "#FFFFFF",
+    "black": "#000000",
+    "cobalt": "#2563EB",
+    "copper": "#B8734A"
+  },
+  "neutral": {
+    "0": "#FFFFFF",
+    "50": "#FAFAF8",
+    "100": "#F5F5F3",
+    "200": "#ECECE8",
+    "300": "#E2E2DE",
+    "400": "#D9D9D6",
+    "500": "#B7B9BC",
+    "600": "#9CA3A8",
+    "700": "#6B7076",
+    "800": "#3E434A",
+    "900": "#1C1F23",
+    "950": "#0B0D10"
+  },
+  "accent": {
+    "blue": "#2563EB",
+    "blueHover": "#1D4ED8",
+    "blueActive": "#1E40AF",
+    "copper": "#B8734A",
+    "copperHover": "#A9653E",
+    "copperActive": "#8F5533"
+  },
+  "semantic": {
+    "success": "#16A34A",
+    "successBg": "#ECFDF3",
+    "warning": "#D97706",
+    "warningBg": "#FFF7ED",
+    "danger": "#DC2626",
+    "dangerBg": "#FEF2F2",
+    "info": "#2563EB",
+    "infoBg": "#EFF6FF"
+  },
+  "emphasis": {
+    "default": "accent.copper",
+    "hover": "accent.copperHover",
+    "active": "accent.copperActive"
+  },
+  "text": {
+    "primary": "#0B0D10",
+    "secondary": "#4B5563",
+    "tertiary": "#9CA3A8",
+    "inverse": "#FFFFFF",
+    "disabled": "#C5C7CA"
+  },
+  "background": {
+    "primary": "#FFFFFF",
+    "secondary": "#FAFAF8",
+    "tertiary": "#ECECE8",
+    "inverse": "#0B0D10",
+    "elevated": "#FFFFFF",
+    "darkElevated": "#24282E",
+    "glass": "rgba(255,255,255,0.72)"
+  },
+  "border": {
+    "subtle": "#ECECE8",
+    "default": "#D9D9D6",
+    "strong": "#9CA3A8",
+    "inverse": "rgba(255,255,255,0.12)",
+    "darkDefault": "rgba(255,255,255,0.08)",
+    "darkSubtle": "rgba(255,255,255,0.05)"
+  },
+  "alpha": {
+    "0": 0,
+    "5": 0.05,
+    "10": 0.1,
+    "20": 0.2,
+    "30": 0.3,
+    "40": 0.4,
+    "50": 0.5,
+    "60": 0.6,
+    "70": 0.7,
+    "80": 0.8,
+    "90": 0.9,
+    "100": 1
+  },
+  "contrast": {
+    "minimum": 4.5,
+    "minimumLargeText": 3
+  }
+}

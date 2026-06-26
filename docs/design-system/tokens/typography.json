@@ -1,0 +1,52 @@
+{
+  "fontFamily": {
+    "display": "Inter",
+    "heading": "Inter",
+    "body": "Inter",
+    "mono": "JetBrains Mono"
+  },
+  "fontWeight": {
+    "thin": 100,
+    "extraLight": 200,
+    "light": 300,
+    "regular": 400,
+    "medium": 500,
+    "semibold": 600,
+    "bold": 700,
+    "extraBold": 800
+  },
+  "fontSize": {
+    "displayXL": "72px",
+    "displayLG": "60px",
+    "displayMD": "48px",
+    "h1": "40px",
+    "h2": "32px",
+    "h3": "28px",
+    "h4": "24px",
+    "h5": "20px",
+    "h6": "18px",
+    "bodyXL": "20px",
+    "bodyLG": "18px",
+    "body": "16px",
+    "bodySM": "14px",
+    "caption": "12px",
+    "micro": "11px"
+  },
+  "lineHeight": {
+    "display": "1.05",
+    "heading": "1.15",
+    "body": "1.7",
+    "compact": "1.4"
+  },
+  "letterSpacing": {
+    "display": "-0.04em",
+    "heading": "-0.025em",
+    "body": "0em",
+    "caps": "0.08em"
+  },
+  "paragraphWidth": {
+    "comfortable": "70ch",
+    "reading": "75ch",
+    "wide": "90ch"
+  }
+}
