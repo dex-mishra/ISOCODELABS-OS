@@ -27,6 +27,7 @@ import {
   ChevronDown,
   ChevronUp,
   X,
+  Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -111,6 +112,26 @@ export default function MeetingDetailsPage({ params }: { params: { id: string } 
     assigneeId: '',
     due_date: '',
   });
+
+  // Delete meeting state
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteMeeting = async () => {
+    if (!confirm('Are you sure you want to delete this meeting? This action cannot be undone.')) return;
+    try {
+      setDeleting(true);
+      const res = await authFetch(`/api/meetings/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to delete meeting.');
+      }
+      router.push('/meetings');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete meeting.';
+      alert(msg);
+      setDeleting(false);
+    }
+  };
 
   const fetchMeetingDetails = useCallback(async () => {
     try {
@@ -441,6 +462,15 @@ export default function MeetingDetailsPage({ params }: { params: { id: string } 
                   <CheckCircle size={14} /> Complete
                 </div>
               )}
+
+              <Button
+                onClick={handleDeleteMeeting}
+                disabled={deleting}
+                variant="outline"
+                className="flex items-center gap-2 text-apple-red border-apple-red/20 hover:bg-apple-red/10 hover:border-apple-red/40"
+              >
+                <Trash2 size={16} /> {deleting ? 'Deleting...' : 'Delete Meeting'}
+              </Button>
             </div>
           </div>
 

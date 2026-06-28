@@ -132,9 +132,23 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     const { id } = params;
 
-    // Hard delete since schema has no soft-delete flag, cascades to attendees
-    await prisma.meeting.delete({
-      where: { id },
+    // Use transaction: remove attendees, unlink tasks, then delete meeting
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete meeting attendees
+      await tx.meetingAttendee.deleteMany({
+        where: { meeting_id: id },
+      });
+
+      // 2. Unlink tasks from the meeting (set meeting_id to null)
+      await tx.task.updateMany({
+        where: { meeting_id: id },
+        data: { meeting_id: null },
+      });
+
+      // 3. Delete the meeting itself
+      await tx.meeting.delete({
+        where: { id },
+      });
     });
 
     // Broadcast deletion via socket
@@ -144,7 +158,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       io.emit('meetings:update', { action: 'delete', meetingId: id });
     }
 
-    return NextResponse.json({ message: 'Meeting deleted successfully.' });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('DELETE meeting by ID error:', error);
     return NextResponse.json(

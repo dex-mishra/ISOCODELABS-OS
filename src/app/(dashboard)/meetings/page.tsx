@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Avatar } from '@/components/ui/Avatar';
-import { Video, Plus, Calendar, Clock, Users, ArrowRight, VideoOff, RefreshCw, X } from 'lucide-react';
+import { Video, Plus, Calendar, Clock, Users, ArrowRight, VideoOff, RefreshCw, X, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -71,6 +71,9 @@ export default function MeetingsPage() {
     duration: '30',
     attendeeIds: [] as string[],
   });
+
+  // Delete state
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchMeetings = useCallback(async () => {
     try {
@@ -164,6 +167,24 @@ export default function MeetingsPage() {
       alert(msg);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteMeeting = async (meetingId: string) => {
+    if (!confirm('Are you sure you want to delete this meeting?')) return;
+    try {
+      setDeletingId(meetingId);
+      const res = await authFetch(`/api/meetings/${meetingId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to delete meeting.');
+      }
+      fetchMeetings();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete meeting.';
+      alert(msg);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -364,6 +385,14 @@ export default function MeetingsPage() {
                         Details
                         <ArrowRight size={14} />
                       </Button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteMeeting(meeting.id); }}
+                        disabled={deletingId === meeting.id}
+                        className="p-1.5 rounded-apple text-sf-text-secondaryLight hover:text-apple-red hover:bg-apple-red/10 transition-all disabled:opacity-50"
+                        title="Delete Meeting"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
 
